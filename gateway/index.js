@@ -62,9 +62,9 @@ aedes.on("publish", async (packet, client) => {
 
     saveRecord({
       temperature: data.data.temp,
-      humidity: data.data.moist,
-      pressure: 1,
-      light: 1,
+      humidity: data.data.humidity,
+      pressure: data.data.pressure_hpa,
+      light: data.data.lux,
     });
     console.log(getLastRecords(1));
 
