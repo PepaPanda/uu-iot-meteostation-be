@@ -81,7 +81,6 @@ MqttClient mqttClient(wifiClient);
 
 DeviceConfig config;
 
-unsigned long lastSend = 0;
 int counter = 0;
 
 bool buttonPressed = false;
@@ -265,7 +264,13 @@ SensorData getSensorData() {
   float humidity = bme.readHumidity();
   float pressure = bme.readPressure() / 100.0F;
 
+  Serial.println("=== BME READ ===");
+  Serial.print("temp raw: "); Serial.println(temp);
+  Serial.print("humidity raw: "); Serial.println(humidity);
+  Serial.print("pressure raw: "); Serial.println(pressure);
+
   if (isnan(temp) || isnan(humidity) || isnan(pressure)) {
+    Serial.println("BME FAIL (NaN)");
     data.temp = -1000;
     data.humidity = -1000;
     data.pressure_hpa = -1000;
@@ -277,12 +282,25 @@ SensorData getSensorData() {
   }
 
   float lux = lightMeter.readLightLevel();
+
+  Serial.println("=== BH1750 READ ===");
+  Serial.print("lux raw: "); Serial.println(lux);
+
   if (lux < 0) {
+    Serial.println("BH1750 FAIL");
     data.lux = -1000;
     data.bhOk = false;
   } else {
     data.lux = lux;
   }
+
+  Serial.println("=== FINAL SENSOR DATA ===");
+  Serial.print("bmeOk: "); Serial.println(data.bmeOk);
+  Serial.print("bhOk: "); Serial.println(data.bhOk);
+  Serial.print("temp: "); Serial.println(data.temp);
+  Serial.print("humidity: "); Serial.println(data.humidity);
+  Serial.print("pressure: "); Serial.println(data.pressure_hpa);
+  Serial.print("lux: "); Serial.println(data.lux);
 
   return data;
 }
@@ -481,47 +499,71 @@ bool sendTelemetry() {
     return false;
   }
 
+  delay(1000); // stabilizace WiFi
+
   if (!connectMQTTOnce()) {
-    Serial.println("MQTT not connected, skipping send.");
+    Serial.println("MQTT not connected.");
     WiFi.end();
     return false;
   }
+
+  delay(300);
+  mqttClient.poll();
 
   SensorData d = getSensorData();
   counter++;
 
   mqttClient.beginMessage(PUB_TOPIC);
-  mqttClient.print("{\"counter\":");
-  mqttClient.print(counter);
-  mqttClient.print(",\"uptime_ms\":");
-  mqttClient.print(millis());
-  mqttClient.print(",\"data\":{");
-  mqttClient.print("\"temp\":");
-  mqttClient.print(d.temp);
-  mqttClient.print(",\"humidity\":");
-  mqttClient.print(d.humidity);
-  mqttClient.print(",\"pressure_hpa\":");
-  mqttClient.print(d.pressure_hpa);
-  mqttClient.print(",\"lux\":");
-  mqttClient.print(d.lux);
-  mqttClient.print("},\"status\":{");
-  mqttClient.print("\"bme280_ok\":");
-  mqttClient.print(d.bmeOk ? "true" : "false");
-  mqttClient.print(",\"bh1750_ok\":");
-  mqttClient.print(d.bhOk ? "true" : "false");
-  mqttClient.print("}}");
-
+  mqttClient.print("{");
+  mqttClient.print("\"temp\":"); mqttClient.print(d.temp);
+  mqttClient.print(",\"humidity\":"); mqttClient.print(d.humidity);
+  mqttClient.print(",\"pressure\":"); mqttClient.print(d.pressure_hpa);
+  mqttClient.print(",\"lux\":"); mqttClient.print(d.lux);
+  mqttClient.print(",\"counter\":"); mqttClient.print(counter);
+  mqttClient.print("}");
   bool ok = mqttClient.endMessage();
+
+  Serial.print("endMessage ok = ");
+  Serial.println(ok);
+
+  delay(1000);
+  mqttClient.poll();
+  delay(200);
+
+  if (!ok) {
+    Serial.println("MQTT publish failed, retrying once...");
+
+    delay(500);
+    mqttClient.stop();
+
+    if (connectMQTTOnce()) {
+      delay(300);
+      mqttClient.poll();
+
+      mqttClient.beginMessage(PUB_TOPIC);
+      mqttClient.print("{");
+      mqttClient.print("\"temp\":"); mqttClient.print(d.temp);
+      mqttClient.print(",\"humidity\":"); mqttClient.print(d.humidity);
+      mqttClient.print(",\"pressure\":"); mqttClient.print(d.pressure_hpa);
+      mqttClient.print(",\"lux\":"); mqttClient.print(d.lux);
+      mqttClient.print(",\"counter\":"); mqttClient.print(counter);
+      mqttClient.print("}");
+
+      ok = mqttClient.endMessage();   // <- bez "bool"
+      Serial.print("retry endMessage ok = ");
+      Serial.println(ok);
+    }
+  }
 
   mqttClient.stop();
   WiFi.end();
 
   if (ok) {
-    Serial.println("Telemetry sent, WiFi + MQTT disconnected.");
+    Serial.println("Telemetry sent.");
     return true;
   }
 
-  Serial.println("MQTT publish failed.");
+  Serial.println("MQTT publish failed after retry.");
   return false;
 }
 
@@ -567,7 +609,7 @@ void setup() {
   }
 
   initSensors();
-  nextSendAt = millis();
+  nextSendAt = millis() + 10000;
 }
 
 void loop() {

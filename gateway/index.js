@@ -58,13 +58,24 @@ aedes.on("publish", async (packet, client) => {
     console.log("retain:", packet.retain);
     console.log("----------------------");
 
-    const data = JSON.parse(payload);
+    let data;
+    try {
+      data = JSON.parse(payload);
+    } catch (error) {
+      console.log(error);
+    }
+
+    Object.keys(data).forEach((key) => {
+      if (!data[key] || data[key] < 0) {
+        data[key] = null;
+      }
+    });
 
     saveRecord({
-      temperature: data.data.temp,
-      humidity: data.data.humidity,
-      pressure: data.data.pressure_hpa,
-      light: data.data.lux,
+      temperature: data.temp,
+      humidity: data.humidity,
+      pressure: data.pressure,
+      light: data.lux,
     });
     console.log(getLastRecords(1));
 
@@ -80,6 +91,9 @@ aedes.on("publish", async (packet, client) => {
 
     console.log(
       "Post was not successful. Data is saved locally and an attempt will be made on the next measurement.",
+    );
+    console.log(
+      "-------------------------------------------------------------------------------------------------------",
     );
   }
 });
