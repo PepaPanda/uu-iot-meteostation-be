@@ -21,7 +21,7 @@ import {
 import { sendToServer } from "./api.js";
 
 //INIT
-const db = initDb();
+initDb();
 const aedes = await Aedes.createBroker();
 const server = createServer(aedes.handle);
 const port = parseInt(MQTT_BROKER_PORT);
@@ -75,11 +75,15 @@ aedes.on("publish", async (packet, client) => {
       temperature: data.temp,
       humidity: data.humidity,
       pressure: data.pressure,
+      raindrops_amount: data.raindrops_amount || 0,
       light: data.lux,
     });
-    console.log(getLastRecords(1));
+    console.log(`last measurement:${JSON.stringify(getLastRecords(1))}`);
 
     const unsentRecords = getUnsentRecords();
+    console.log(
+      `There are ${unsentRecords.length} unsent records saved. Attempting to send them now.`,
+    );
 
     const postSuccessful = await sendToServer(unsentRecords);
 

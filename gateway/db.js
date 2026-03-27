@@ -27,8 +27,9 @@ export const initDb = () => {
             humidity REAL,
             pressure REAL,
             light REAL,
+            raindrops_amount INTEGER NOT NULL DEFAULT 0,
             created_at TEXT NOT NULL,
-            sent_to_server INTEGER NOT NULL DEFAULT 0
+            sent_to_server BOOLEAN NOT NULL DEFAULT 0 CHECK (sent_to_server IN(0,1))
           )
         `);
 
@@ -48,10 +49,11 @@ export const initDb = () => {
       humidity,
       pressure,
       light,
+      raindrops_amount,
       created_at,
       sent_to_server
     )
-    VALUES (?, ?, ?, ?, ?, ?)
+    VALUES (?, ?, ?, ?, ?, ?, ?)
   `);
 
   return db;
@@ -76,6 +78,7 @@ export const saveRecord = ({
   humidity = null,
   pressure = null,
   light = null,
+  raindrops_amount = 0,
   sent_to_server = 0,
 }) => {
   return insertRecordStmt.run(
@@ -83,6 +86,7 @@ export const saveRecord = ({
     humidity,
     pressure,
     light,
+    raindrops_amount,
     new Date().toISOString(),
     sent_to_server ? 1 : 0,
   );
@@ -96,6 +100,7 @@ export const getLastRecords = (limit = 10) => {
       humidity,
       pressure,
       light,
+      raindrops_amount,
       created_at,
       sent_to_server
     FROM records

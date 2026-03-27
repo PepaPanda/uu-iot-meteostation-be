@@ -5,13 +5,19 @@ const { DEVICE_ID, SECRET_TOKEN, POST_API_URL } = process.env;
 
 export const sendToServer = async (records) => {
   try {
-    const response = await fetch(POST_API_URL, {
+    const response = await fetch(`${POST_API_URL}/telemetry`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${SECRET_TOKEN}`,
       },
-      body: JSON.stringify({ data: records, deviceId: DEVICE_ID }),
+      body: JSON.stringify({
+        data: records.map(({ sent_to_server, ...rest }) => {
+          console.log(rest);
+          return rest;
+        }),
+        deviceId: DEVICE_ID,
+      }),
     });
 
     if (!response.ok) {

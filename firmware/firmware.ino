@@ -11,17 +11,17 @@ ArduinoLEDMatrix matrix;
 Adafruit_BME280 bme;
 BH1750 lightMeter;
 
-// ===== BUTTON =====
+//CONFIG BTN
 const int BTN_PIN = 2;
 const unsigned long BUTTON_HOLD_MS = 5000;
 
-// ===== CONFIG PORTAL =====
+//CONFIG PORTAL
 WiFiServer configServer(80);
 const char SETUP_AP_SSID[] = "MeteoStation-Setup";
 const char SETUP_AP_PASS[] = "meteosetup";   // min 8 chars
 const uint32_t CONFIG_MAGIC = 0x4D535431;    // "MST1"
 
-// ===== Matrix icons =====
+//MATRIX ICONS DEFINITION
 uint8_t checkmarkFrame[8][12] = {
   {0,0,0,0,0,0,0,0,0,0,0,0},
   {0,0,0,0,0,0,0,0,0,0,1,0},
@@ -73,7 +73,19 @@ struct DeviceConfig {
   uint32_t publishIntervalMs;
 };
 
-// ===== MQTT =====
+//EEPROM LAYOUT
+const int EEPROM_ADDR_CONFIG = 0;
+const int EEPROM_ADDR_CLICK_COUNT = EEPROM_ADDR_CONFIG + sizeof(DeviceConfig) + 8;
+
+//REED SWITCH
+const int REED_PIN = 3;
+volatile uint32_t clickCount = 0;
+volatile unsigned long lastInterruptMs = 0;
+volatile bool clickCountDirty = false;
+const unsigned long REED_DEBOUNCE_MS = 50;
+const unsigned long CLICK_EEPROM_SAVE_INTERVAL_MS = 5000;
+
+//MQTT
 const char PUB_TOPIC[] = "uno-r4/test";
 
 WiFiClient wifiClient;
@@ -87,7 +99,11 @@ bool buttonPressed = false;
 unsigned long pressStart = 0;
 bool configMode = false;
 
-// ===================== helpers =====================
+unsigned long nextSendAt = 0;
+const unsigned long retryDelayMs = 30000; // 30 sec
+unsigned long lastClickSaveAt = 0;
+
+//HELPERS
 
 void copyStringToBuffer(const String& src, char* dst, size_t dstSize) {
   if (dstSize == 0) return;
@@ -141,7 +157,6 @@ String getQueryParam(const String& requestLine, const char* key) {
   return "";
 }
 
-
 void setDefaultConfig() {
   memset(&config, 0, sizeof(config));
   config.magic = CONFIG_MAGIC;
@@ -163,7 +178,7 @@ bool isConfigValid() {
 }
 
 bool loadConfig() {
-  EEPROM.get(0, config);
+  EEPROM.get(EEPROM_ADDR_CONFIG, config);
 
   if (!isConfigValid()) {
     Serial.println("No valid config found.");
@@ -177,7 +192,7 @@ bool loadConfig() {
 
 void saveConfig() {
   config.magic = CONFIG_MAGIC;
-  EEPROM.put(0, config);
+  EEPROM.put(EEPROM_ADDR_CONFIG, config);
   Serial.println("Config saved to EEPROM.");
 }
 
@@ -185,7 +200,65 @@ void resetBoard() {
   NVIC_SystemReset();
 }
 
-// ===================== WiFi / MQTT =====================
+uint32_t getClickCountSnapshot() {
+  noInterrupts();
+  uint32_t snapshot = clickCount;
+  interrupts();
+  return snapshot;
+}
+
+void clearClickCount() {
+  noInterrupts();
+  clickCount = 0;
+  clickCountDirty = true;
+  interrupts();
+}
+
+void loadClickCount() {
+  uint32_t stored = 0;
+  EEPROM.get(EEPROM_ADDR_CLICK_COUNT, stored);
+
+  if (stored > 1000000000UL) {
+    stored = 0;
+  }
+
+  noInterrupts();
+  clickCount = stored;
+  clickCountDirty = false;
+  interrupts();
+
+  Serial.print("Loaded clickCount from EEPROM: ");
+  Serial.println(stored);
+}
+
+void saveClickCountIfNeeded(bool force = false) {
+  bool dirty;
+  noInterrupts();
+  dirty = clickCountDirty;
+  interrupts();
+
+  if (!dirty && !force) {
+    return;
+  }
+
+  if (!force && (millis() - lastClickSaveAt < CLICK_EEPROM_SAVE_INTERVAL_MS)) {
+    return;
+  }
+
+  uint32_t snapshot = getClickCountSnapshot();
+  EEPROM.put(EEPROM_ADDR_CLICK_COUNT, snapshot);
+
+  noInterrupts();
+  clickCountDirty = false;
+  interrupts();
+
+  lastClickSaveAt = millis();
+
+  Serial.print("clickCount saved to EEPROM: ");
+  Serial.println(snapshot);
+}
+
+//WIFI/MQTT
 
 bool connectWiFiOnce() {
   Serial.print("Connecting to WiFi: ");
@@ -211,6 +284,7 @@ bool connectWiFiOnce() {
   WiFi.end();
   return false;
 }
+
 bool connectMQTTOnce() {
   Serial.print("Connecting to MQTT broker: ");
   Serial.print(config.mqttHost);
@@ -229,7 +303,7 @@ bool connectMQTTOnce() {
   return true;
 }
 
-// ===================== Sensors =====================
+//SENSORS
 
 void initSensors() {
   Wire.begin();
@@ -305,7 +379,21 @@ SensorData getSensorData() {
   return data;
 }
 
-// ===================== Config Portal =====================
+//REED ISR
+
+void onReedTriggered() {
+  unsigned long now = millis();
+
+  if (now - lastInterruptMs < REED_DEBOUNCE_MS) {
+    return;
+  }
+
+  lastInterruptMs = now;
+  clickCount++;
+  clickCountDirty = true;
+}
+
+//CONFIG PORTAL
 
 void sendConfigForm(WiFiClient& client) {
   client.println("HTTP/1.1 200 OK");
@@ -493,13 +581,36 @@ void handleButton() {
   }
 }
 
+//MQTT PUBLISH
+
+bool publishTelemetryPayload(const SensorData& d, uint32_t clicksToSend) {
+  mqttClient.beginMessage(PUB_TOPIC);
+  mqttClient.print("{");
+  mqttClient.print("\"temp\":"); mqttClient.print(d.temp);
+  mqttClient.print(",\"humidity\":"); mqttClient.print(d.humidity);
+  mqttClient.print(",\"pressure\":"); mqttClient.print(d.pressure_hpa);
+  mqttClient.print(",\"lux\":"); mqttClient.print(d.lux);
+  mqttClient.print(",\"raindrops_amount\":"); mqttClient.print(clicksToSend);
+  mqttClient.print(",\"counter\":"); mqttClient.print(counter);
+  mqttClient.print("}");
+
+  bool ok = mqttClient.endMessage();
+
+  Serial.print("endMessage ok = ");
+  Serial.println(ok);
+
+  return ok;
+}
+
 bool sendTelemetry() {
+  uint32_t clicksToSend = getClickCountSnapshot();
+
   if (!connectWiFiOnce()) {
     Serial.println("WiFi not connected, skipping send.");
     return false;
   }
 
-  delay(1000); // stabilizace WiFi
+  delay(1000);
 
   if (!connectMQTTOnce()) {
     Serial.println("MQTT not connected.");
@@ -513,18 +624,7 @@ bool sendTelemetry() {
   SensorData d = getSensorData();
   counter++;
 
-  mqttClient.beginMessage(PUB_TOPIC);
-  mqttClient.print("{");
-  mqttClient.print("\"temp\":"); mqttClient.print(d.temp);
-  mqttClient.print(",\"humidity\":"); mqttClient.print(d.humidity);
-  mqttClient.print(",\"pressure\":"); mqttClient.print(d.pressure_hpa);
-  mqttClient.print(",\"lux\":"); mqttClient.print(d.lux);
-  mqttClient.print(",\"counter\":"); mqttClient.print(counter);
-  mqttClient.print("}");
-  bool ok = mqttClient.endMessage();
-
-  Serial.print("endMessage ok = ");
-  Serial.println(ok);
+  bool ok = publishTelemetryPayload(d, clicksToSend);
 
   delay(1000);
   mqttClient.poll();
@@ -539,19 +639,7 @@ bool sendTelemetry() {
     if (connectMQTTOnce()) {
       delay(300);
       mqttClient.poll();
-
-      mqttClient.beginMessage(PUB_TOPIC);
-      mqttClient.print("{");
-      mqttClient.print("\"temp\":"); mqttClient.print(d.temp);
-      mqttClient.print(",\"humidity\":"); mqttClient.print(d.humidity);
-      mqttClient.print(",\"pressure\":"); mqttClient.print(d.pressure_hpa);
-      mqttClient.print(",\"lux\":"); mqttClient.print(d.lux);
-      mqttClient.print(",\"counter\":"); mqttClient.print(counter);
-      mqttClient.print("}");
-
-      ok = mqttClient.endMessage();   // <- bez "bool"
-      Serial.print("retry endMessage ok = ");
-      Serial.println(ok);
+      ok = publishTelemetryPayload(d, clicksToSend);
     }
   }
 
@@ -588,20 +676,21 @@ bool sendTelemetryWithRetry(int maxAttempts) {
   return false;
 }
 
-// ===================== setup / loop =====================
-
-unsigned long nextSendAt = 0;
-const unsigned long retryDelayMs = 30000; // 30 sec
+//SETUP + LOOP
 
 void setup() {
   Serial.begin(9600);
 
   pinMode(BTN_PIN, INPUT_PULLUP);
+  pinMode(REED_PIN, INPUT_PULLUP);
 
   matrix.begin();
   mqttClient.setKeepAliveInterval(60);
 
   bool hasConfig = loadConfig();
+
+  loadClickCount();
+  attachInterrupt(digitalPinToInterrupt(REED_PIN), onReedTriggered, FALLING);
 
   if (!hasConfig) {
     Serial.println("Entering config mode (no config)");
@@ -615,15 +704,28 @@ void setup() {
 void loop() {
   handleButton();
 
+  saveClickCountIfNeeded(false);
+
   if ((long)(millis() - nextSendAt) >= 0) {
     bool sent = sendTelemetryWithRetry(3);
 
     if (sent) {
       Serial.println("Telemetry delivered.");
+
+      clearClickCount();
+      saveClickCountIfNeeded(true);
+
       nextSendAt = millis() + config.publishIntervalMs;
+      matrix.renderBitmap(checkmarkFrame, 8, 12);
+      delay(500);
     } else {
       Serial.println("Telemetry failed, retry scheduled later.");
+
+      saveClickCountIfNeeded(true);
+
       nextSendAt = millis() + retryDelayMs;
+      matrix.renderBitmap(xFrame, 8, 12);
+      delay(500);
     }
 
     matrix.clear();
