@@ -22,6 +22,13 @@
 
 ## SERVER
 
+- The server uses the APP_STAGE environment variable to decide whether to load a .env file.
+- If APP_STAGE is not set or if it's set to "production", environment variables from .env will NOT be loaded.
+- `npm install`
+- start the server (you need to set an env variable first):
+    - **POWERSHEL**: `$env:APP_STAGE="development"; npm run dev`
+    - **LINUX/MAC OS**: `APP_STAGE="development" npm run dev`
+
 - STACK:
   - Typescript, express, Postres (with TimescaleDB)
 - GOAL: Utilize SSE for sending data to the client
