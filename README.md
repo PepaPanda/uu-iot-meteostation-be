@@ -32,3 +32,7 @@
 - STACK:
   - Typescript, express, Postres (with TimescaleDB)
 - GOAL: Utilize SSE for sending data to the client
+
+DB
+![drawSQL-image-export-2026-04-04](https://github.com/user-attachments/assets/a9986629-f31d-4710-bbad-bf1754b18422)
+
