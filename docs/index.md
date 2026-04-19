@@ -19,7 +19,6 @@
   - `Operator`
   - `Supervisor`
   - `Administrator`
-  - `PlatformAdmin`
 
 ---
 
@@ -40,7 +39,7 @@ Authenticates invited and registered user, returns access token and refresh toke
 `/api/auth/login`
 
 **Application profiles**  
-Guest, Operator, Supervisor, Administrator, PlatformAdmin
+Guest, Operator, Supervisor, Administrator
 
 **Input**
 
@@ -88,7 +87,7 @@ import { z } from "zod";
 const userSchema = z.object({
   id: z.string(),
   email: z.string().email(),
-  role: z.enum(["guest", "operator", "supervisor", "administrator", "platformAdmin"]),
+  role: z.enum(["guest", "operator", "supervisor", "administrator"]),
   nickname: z.string(),
   createdAt: z.string().datetime(),
   registeredAt: z.string().datetime(),
@@ -132,7 +131,7 @@ Refreshes access token using valid refresh token.
 `/api/auth/refresh`
 
 **Application profiles**  
-Guest, Operator, Supervisor, Administrator, PlatformAdmin
+Guest, Operator, Supervisor, Administrator
 
 **Input**
 
@@ -203,7 +202,7 @@ Revokes current refresh token/session.
 `/api/auth/logout`
 
 **Application profiles**  
-Operator, Supervisor, Administrator, PlatformAdmin
+Operator, Supervisor, Administrator
 
 **Input**
 
@@ -256,7 +255,7 @@ Returns current authenticated user identity and role.
 `/api/auth/me`
 
 **Application profiles**  
-Operator, Supervisor, Administrator, PlatformAdmin
+Operator, Supervisor, Administrator
 
 **Input**  
 No body.
@@ -289,7 +288,7 @@ const dtoOutValidationSchema = z.object({
   user: z.object({
     id: z.string(),
     email: z.string().email(),
-    role: z.enum(["guest", "operator", "supervisor", "administrator", "platformAdmin"]),
+    role: z.enum(["guest", "operator", "supervisor", "administrator"]),
     nickname: z.string(),
     createdAt: z.string().datetime(),
     registeredAt: z.string().datetime(),
@@ -325,7 +324,7 @@ Creates invite for a future user and generates one-time registration token.
 `/api/users/invites`
 
 **Application profiles**  
-Supervisor, Administrator, PlatformAdmin
+Supervisor, Administrator
 
 **Input**
 
@@ -457,7 +456,7 @@ const dtoOutValidationSchema = z.object({
   user: z.object({
     id: z.string(),
     email: z.string().email(),
-    role: z.enum(["guest", "operator", "supervisor", "administrator", "platformAdmin"]),
+    role: z.enum(["guest", "operator", "supervisor", "administrator"]),
     nickname: z.string(),
     createdAt: z.string().datetime(),
     registeredAt: z.string().datetime(),
@@ -500,7 +499,7 @@ Returns users for administration.
 `/api/users`
 
 **Application profiles**  
-Supervisor, Administrator, PlatformAdmin
+Supervisor, Administrator
 
 **Input**
 
@@ -521,7 +520,7 @@ import { z } from "zod";
 const dtoInValidationSchema = z.object({
   page: z.coerce.number().int().positive().default(1),
   pageSize: z.coerce.number().int().min(1).max(100).default(20),
-  role: z.enum(["guest", "operator", "supervisor", "administrator", "platformAdmin"]).optional(),
+  role: z.enum(["guest", "operator", "supervisor", "administrator"]).optional(),
   search: z.string().trim().max(255).optional(),
 });
 ```
@@ -557,7 +556,7 @@ import { z } from "zod";
 const userListItemSchema = z.object({
   id: z.string(),
   email: z.string().email(),
-  role: z.enum(["guest", "operator", "supervisor", "administrator", "platformAdmin"]),
+  role: z.enum(["guest", "operator", "supervisor", "administrator"]),
   nickname: z.string(),
   createdAt: z.string().datetime(),
   registeredAt: z.string().datetime(),
@@ -601,7 +600,7 @@ Returns one user by ID.
 `/api/users/:userId`
 
 **Application profiles**  
-Supervisor, Administrator, PlatformAdmin
+Supervisor, Administrator
 
 **Input**
 
@@ -650,7 +649,7 @@ const dtoOutValidationSchema = z.object({
   user: z.object({
     id: z.string(),
     email: z.string().email(),
-    role: z.enum(["guest", "operator", "supervisor", "administrator", "platformAdmin"]),
+    role: z.enum(["guest", "operator", "supervisor", "administrator"]),
     nickname: z.string(),
     createdAt: z.string().datetime(),
     registeredAt: z.string().datetime(),
@@ -685,7 +684,7 @@ Changes application role/profile of an existing user.
 `/api/users/:userId/role`
 
 **Application profiles**  
-Administrator, PlatformAdmin
+Administrator
 
 **Input**
 
@@ -710,7 +709,7 @@ const dtoInValidationSchema = z.object({
     userId: z.string().regex(/^\d+$/),
   }),
   body: z.object({
-    role: z.enum(["guest", "operator", "supervisor", "administrator", "platformAdmin"]),
+    role: z.enum(["guest", "operator", "supervisor", "administrator"]),
   }),
 });
 ```
@@ -735,7 +734,7 @@ import { z } from "zod";
 const dtoOutValidationSchema = z.object({
   user: z.object({
     id: z.string(),
-    role: z.enum(["guest", "operator", "supervisor", "administrator", "platformAdmin"]),
+    role: z.enum(["guest", "operator", "supervisor", "administrator"]),
     updatedAt: z.string().datetime(),
   }),
 });
@@ -749,7 +748,7 @@ const dtoOutValidationSchema = z.object({
 3. Load target user.
    - `404`
 4. Enforce business rules.
-   - e.g. `403 Forbidden` if Administrator tries to manage PlatformAdmin.
+   - e.g. `403 Forbidden` if a guest tries to manage.
 5. Update role and timestamp.
    - `500` on DB failure.
 6. Return updated role.
@@ -774,7 +773,7 @@ Returns configured meteo stations/gateways.
 `/api/gateways`
 
 **Application profiles**  
-Operator, Supervisor, Administrator, PlatformAdmin
+Operator, Supervisor, Administrator
 
 **Input**
 
@@ -864,7 +863,7 @@ Creates new gateway record and generates one-time secret for provisioning.
 `/api/gateways`
 
 **Application profiles**  
-Administrator, PlatformAdmin
+Administrator
 
 **Input**
 
@@ -953,7 +952,7 @@ Returns metadata and live state of a gateway.
 `/api/gateways/:gatewayId`
 
 **Application profiles**  
-Operator, Supervisor, Administrator, PlatformAdmin
+Operator, Supervisor, Administrator
 
 **Input**
 
@@ -1040,7 +1039,7 @@ Updates gateway metadata.
 `/api/gateways/:gatewayId`
 
 **Application profiles**  
-Administrator, PlatformAdmin
+Administrator
 
 **Input**
 
@@ -1140,7 +1139,7 @@ Generates new secret for gateway and invalidates previous one.
 `/api/gateways/:gatewayId/rotate-secret`
 
 **Application profiles**  
-Administrator, PlatformAdmin
+Administrator
 
 **Input**
 
@@ -1212,7 +1211,7 @@ Deletes a gateway. Related telemetry is cascade deleted by DB.
 `/api/gateways/:gatewayId`
 
 **Application profiles**  
-Administrator, PlatformAdmin
+Administrator
 
 **Input**
 
@@ -1272,7 +1271,7 @@ Returns latest telemetry for one gateway.
 `/api/telemetry/current/:gatewayId`
 
 **Application profiles**  
-Operator, Supervisor, Administrator, PlatformAdmin
+Operator, Supervisor, Administrator
 
 **Input**
 
@@ -1366,7 +1365,7 @@ Server-Sent Events stream for automatic FE updates with newly received telemetry
 `/api/telemetry/stream/:gatewayId`
 
 **Application profiles**  
-Operator, Supervisor, Administrator, PlatformAdmin
+Operator, Supervisor, Administrator
 
 **Input**
 
@@ -1466,7 +1465,7 @@ Returns historical telemetry for charts and tables.
 `/api/telemetry/history/:gatewayId`
 
 **Application profiles**  
-Operator, Supervisor, Administrator, PlatformAdmin
+Operator, Supervisor, Administrator
 
 **Input**
 
@@ -1574,7 +1573,7 @@ Returns bucketed telemetry aggregates for charts and simple trend visualization.
 `/api/telemetry/trends/:gatewayId`
 
 **Application profiles**  
-Operator, Supervisor, Administrator, PlatformAdmin
+Operator, Supervisor, Administrator
 
 **Input**
 
@@ -1674,7 +1673,7 @@ Returns lightweight derived prediction/trend based on recent telemetry window.
 `/api/telemetry/prediction/:gatewayId`
 
 **Application profiles**  
-Operator, Supervisor, Administrator, PlatformAdmin
+Operator, Supervisor, Administrator
 
 **Input**
 
@@ -1771,7 +1770,7 @@ Returns notifications visible to current user, including acknowledgement state.
 `/api/notifications`
 
 **Application profiles**  
-Operator, Supervisor, Administrator, PlatformAdmin
+Operator, Supervisor, Administrator
 
 **Input**
 
@@ -1853,7 +1852,7 @@ Marks notification as acknowledged for current user.
 `/api/notifications/:notificationId/acknowledge`
 
 **Application profiles**  
-Operator, Supervisor, Administrator, PlatformAdmin
+Operator, Supervisor, Administrator
 
 **Input**
 
@@ -1925,7 +1924,7 @@ Creates manual notification, mainly for admins/operations.
 `/api/notifications`
 
 **Application profiles**  
-Supervisor, Administrator, PlatformAdmin
+Supervisor, Administrator
 
 **Input**
 
