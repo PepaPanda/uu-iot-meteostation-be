@@ -2173,7 +2173,7 @@ For gateway live/health endpoints, define one simple rule centrally, for example
 
 ---
 
-# Suggested module mapping to your structure
+# Module mapping based on project structure
 
 - `modules/api/auth`
   - login
@@ -2209,9 +2209,7 @@ For gateway live/health endpoints, define one simple rule centrally, for example
 
 ---
 
-# My practical recommendation
-
-If you want to keep the first version sane, I’d start with this minimal MVP set:
+# Core endpoints list
 
 1. `POST /api/auth/login`
 2. `POST /api/auth/refresh`
@@ -2232,5 +2230,4 @@ If you want to keep the first version sane, I’d start with this minimal MVP se
 17. `POST /api/notifications/:notificationId/acknowledge`
 18. `POST /collect/data`
 
-Prediction and user admin detail endpoints can come right after that.
 
