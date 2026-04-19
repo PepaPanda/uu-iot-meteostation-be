@@ -2087,7 +2087,7 @@ const dtoOutValidationSchema = z.object({
 
 # 8. Optional PlatformAdmin-only operational endpoints
 
-These are optional. I would keep them only if you really want app-level operations and not infra-level operations.
+Optional endpoints for app-level operations (may not be implemented).
 
 ## 8.1 List gateway health summary
 
