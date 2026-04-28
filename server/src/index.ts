@@ -1,16 +1,12 @@
-import express from 'express';
-import { apiRouter, collectRouter } from './routes';
+import initExpress from './initExpress';
+import { checkDbConnection } from './db/checkConnection';
 
-import env from './env';
 
-const app = express();
-
-app.use(express.json());
-
-app.use('/api', apiRouter);
-app.use('/collect', collectRouter);
-
-app.listen(env.EXPRESS_PORT, () => {
-  console.log(`Server running on http://localhost:${env.EXPRESS_PORT}`);
-  console.log(`APP_ENV: ${env.APP_STAGE}`);
+// First try DB connection, then init express
+checkDbConnection().then((db) => {
+  console.log('Database connected:', db.now);
+  initExpress();
+}).catch((error) => {
+  console.error('Failed to start server:', error);
+  process.exit(1);
 });
