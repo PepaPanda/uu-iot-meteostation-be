@@ -331,7 +331,7 @@ Supervisor, Administrator
 ```ts
 const dtoIn = {
   email: "new.user@example.com",
-  expiresAt: "2026-04-30T23:59:59Z",
+  role: "guest",
 };
 ```
 
@@ -341,8 +341,13 @@ const dtoIn = {
 import { z } from "zod";
 
 const dtoInValidationSchema = z.object({
-  email: z.string().trim().email().max(255),
-  expiresAt: z.string().datetime(),
+  email: z.string().email(),
+  role: z.enum([
+    'guest',
+    'operator',
+    'supervisor',
+    'administrator',
+  ]),
 });
 ```
 
@@ -2024,6 +2029,8 @@ const dtoIn = {
   humidity: 52.1,
   lighting: 780.5,
   raindropsAmount: 0,
+  nodeBatteryLevel: 55,
+  nodeWifiStrength: 3,
 };
 ```
 
@@ -2033,13 +2040,15 @@ const dtoIn = {
 import { z } from "zod";
 
 const dtoInValidationSchema = z.object({
-  remoteId: z.string().regex(/^\d+$/),
+  remoteId: z.string().regex(/^\d+$/, 'Remote ID must contain only digits'),
   measuredAtUtc: z.string().datetime(),
   temperature: z.number().finite(),
   pressure: z.number().finite(),
   humidity: z.number().gte(0).lte(100),
   lighting: z.number().gte(0),
   raindropsAmount: z.number().int().nonnegative(),
+  nodeBatteryLevel: z.number().int().gte(0).lte(100).optional(),
+  nodeWifiStrength: z.number().int().optional(),
 });
 ```
 

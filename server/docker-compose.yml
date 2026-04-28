@@ -1,0 +1,23 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: meteostation-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: meteostation
+      POSTGRES_USER: meteostation_user
+      POSTGRES_PASSWORD: meteostation_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  adminer:
+    image: adminer
+    container_name: meteostation-adminer
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+
+volumes:
+  postgres_data:

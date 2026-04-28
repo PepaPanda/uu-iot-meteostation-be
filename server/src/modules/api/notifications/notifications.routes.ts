@@ -2,15 +2,15 @@ import express from 'express';
 
 const notificationsRouter = express.Router();
 
-notificationsRouter.get('/list', (req, res) => {
-    res.send('list of notifications here');
+notificationsRouter.get('/', (req, res) => {
+    res.send('Returns notifications visible to current user, including acknowledgement state.');
 });
 
-notificationsRouter.post('/create', (req, res) => {
-    res.json({responsibility: 'create notifications', bodyPosted: req.body});
+notificationsRouter.post('/', (req, res) => {
+    res.json({responsibility: 'Creates manual notification, mainly for admins', bodyPosted: req.body});
 });
 
-notificationsRouter.patch('/acknowledge/:notificationId', (req, res) => {
+notificationsRouter.post('/:notificationId/acknowledge', (req, res) => {
     res.json({responsibility: 'acknowledge a single notification by id', idPosted: req.params.notificationId});
 });
 

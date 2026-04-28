@@ -1,12 +1,14 @@
-class AppError extends Error {
+export default class AppError extends Error {
   code: number;
   isOperational: boolean;
+  details: unknown;
 
-  constructor(message: string, code: number, isOperational: boolean) {
+  constructor(message: string, code: number, isOperational: boolean, details?: unknown) {
     super(message);
     this.code = code;
     this.isOperational = isOperational;
     this.name = this.constructor.name;
+    this.details = details;
   }
 }
 
@@ -41,11 +43,8 @@ export class ConflictError extends AppError {
 }
 
 export class UnprocessableEntityError extends AppError {
-  details: unknown;
-
-  constructor(message = 'Unprocessable entity', details?: unknown) {
-    super(message, 422, true);
-    this.details = details;
+  constructor(message = 'Unprocessable entity', details: unknown = {}) {
+    super(message, 422, true, details);
   }
 }
 

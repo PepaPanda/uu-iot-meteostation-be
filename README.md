@@ -24,7 +24,22 @@
 
 - The server uses the APP_STAGE environment variable to decide whether to load a .env file.
 - If APP_STAGE is not set or if it's set to "production", environment variables from .env will NOT be loaded.
+- For local testing, you still need to make your own .env file
 - `npm install`
+
+- Ensure your env file has `DATABASE_URL=postgresql://meteostation_user:meteostation_password@localhost:5432/meteostation`
+- run the database with: `docker compose up -d`
+- Init DB with `npm run db:init` (runs server/database/migrations/001_init.sql)
+- Seed with `npm run db:seed` (runs server/database/seeds/test.seed.sql)
+- Go to http://localhost:8080 And login to adminer:
+  - System: PostgreSQL
+  - Server: postgres
+  - Username: meteostation_user
+  - Password: meteostation_password
+  - Database: meteostation
+
+
+
 - start the server (you need to set an env variable first):
     - **POWERSHEL**: `$env:APP_STAGE="development"; npm run dev`
     - **LINUX/MAC OS**: `APP_STAGE="development" npm run dev`
