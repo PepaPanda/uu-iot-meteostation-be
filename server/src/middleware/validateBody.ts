@@ -1,14 +1,20 @@
-import type { Request, Response, NextFunction} from 'express';
+import type { Response, NextFunction} from 'express';
 import { ZodSchema, ZodError } from 'zod/v3';
 import { BadRequestError, UnprocessableEntityError } from '../shared/errors';
 
 import { isObjectEmpty } from '../shared/helpers';
 
+import { TypedRequest } from '../shared/types';
+
+import z from 'zod/v3';
+
 
 export const validateBody = (schema: ZodSchema) => {
-    return (req: Request, res: Response, next: NextFunction) => {
+    type Dto = z.infer<typeof schema>;
+
+    return (req: TypedRequest<Dto>, res: Response, next: NextFunction) => {
         try {
-            if(isObjectEmpty(req.body)) {
+            if(!req.body || isObjectEmpty(req.body)) {
                 throw new BadRequestError('Body is empty, you need to send a request body');
             }
             const validatedData = schema.parse(req.body);

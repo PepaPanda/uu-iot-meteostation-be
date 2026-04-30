@@ -1,4 +1,5 @@
 import express from 'express';
+import authenticate from '../../../middleware/authenticate';
 
 const usersRouter = express.Router();
 
@@ -14,7 +15,7 @@ usersRouter.delete('/:userId', (req, res) => {
     res.json({responsibility: 'delete user', body: req.body});
 });
 
-usersRouter.post('/invite',  (req, res) => {
+usersRouter.post('/invite', authenticate,  (req, res) => {
     res.json({responsibility: 'this will return an invitation link for any user. Target e-mail is required in body', body: req.body});
 });
 
