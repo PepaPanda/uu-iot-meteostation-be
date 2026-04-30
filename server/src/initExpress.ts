@@ -8,6 +8,9 @@ import morgan from 'morgan';
 import env from './env';
 import { globalErrorHandler, invalidSyntaxErrorHandler } from './middleware/errorHandlers';
 
+import cookieParser from 'cookie-parser';
+
+
 export default () => {
     const app = express();
 
@@ -23,6 +26,9 @@ export default () => {
     // Parse incoming req bodies
     app.use(express.json());
     app.use(invalidSyntaxErrorHandler); // Keep so invalid json doesnt end on 500
+
+    //Cookkies
+    app.use(cookieParser());
 
     //Routers
     app.use('/api', apiRouter);
