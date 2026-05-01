@@ -40,6 +40,7 @@ export const createUserSession = async (
 export const findUserSessionByHashedToken = async (
   tokenHash: string,
 ): Promise<Session | null> => {
+  console.log(tokenHash);
   const result = await dbPool.query<Session>(
     `SELECT
         session_id AS "sessionId",

@@ -1,6 +1,6 @@
 import express from 'express';
 
-import { login as loginController,  registerFromInvite as registerFromInviteController } from './auth.controller';
+import { login as loginController,  registerFromInvite as registerFromInviteController, getAuthenticatedUserInformation as getAuthenticatedUserInformationController } from './auth.controller';
 
 import { validateBody } from '../../../middleware/validateBody';
 import { loginUserSchema } from '../../../shared/zodSchemas';
@@ -18,9 +18,7 @@ authRouter.post('/logout', authenticate,  (req, res) => {
   res.send('logout post');
 });
 
-authRouter.get('/me', (req, res) => {
-  res.send('Returns current authenticated user identity and role.');
-});
+authRouter.get('/me', authenticate, getAuthenticatedUserInformationController);
 
 authRouter.post('/register-from-invite/:token', validateBody(registerFromInviteUserSchema), requireNoActiveSession, registerFromInviteController);
 

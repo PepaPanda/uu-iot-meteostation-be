@@ -1,4 +1,4 @@
-import type { Response } from 'express';
+import type { Response, Request } from 'express';
 import { generateAndReturnNewSessionToken } from './auth.service';
 
 import type { LoginUserRequestDto } from './auth.schema';
@@ -14,19 +14,23 @@ import { TypedRequest } from '../../../shared/types';
 
 import { createUser as createUserService } from '../users/users.service';
 
+import { findUserById as findUserByIdService } from '../users/users.service';
+
 import env from '../../../env';
 import ms from 'ms';
+import { getRequiredSession } from './auth.helpers';
 export const login = async (req: TypedRequest<LoginUserRequestDto>, res: Response) => {
     const { email, password } = req.body;
-    const user = await findUserByEmail(email);
-    if(!user) throw new NotFoundError('User not found');
 
+    const user = await findUserByEmail(email, {includePassword: true});
+    if(!user.userPasswordHash) throw new InternalServerError();
+
+    if(!user) throw new NotFoundError('User not found');
     const {userId, userEmail, userRole, userNickname} = user;
 
     let passwordIsValid: boolean;
     try {
         passwordIsValid = await validatePassword(user.userPasswordHash, password);
-
     } catch (error) {
         //Logger can be here - this is a case when hash saved in DB is not in argon2 format
         console.error(error);
@@ -71,4 +75,11 @@ export const registerFromInvite = async (req: TypedRequest<RegisterUserRequestDt
         role: user.userRole,
         },
     });
+};
+
+export const getAuthenticatedUserInformation = async (req: Request, res: Response) => {
+    const session = getRequiredSession(req);
+    const user = await findUserByIdService(session.userId);
+    if(!user) throw new NotFoundError('User not found');
+    res.json(user);
 };

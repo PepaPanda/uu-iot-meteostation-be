@@ -1,17 +1,15 @@
 import crypto from 'crypto';
 
-import type { Email } from './users.schema';
+import type { Email, UserWithoutPasswordHash, User } from './users.schema';
 import { createInvitation } from './users.repository';
 
 import type { Invitation } from '../auth/auth.schema';
 
-import { findInvitationByHashedToken } from './users.repository';
+import { findInvitationByHashedToken, findUserByEmail as findUserByEmailRepository, findUserById as findUserByIdRepository } from './users.repository';
 
 import { UnauthorizedError, ConflictError } from '../../../shared/errors';
 
 import { hashPassword } from '../auth/auth.service';
-
-import type { User } from './users.schema';
 
 import { createUser as createUserRepository, fulfillInvitation as fulfillInvitationRepository } from './users.repository';
 
@@ -82,4 +80,16 @@ export const createUser = async (
   await fulfillInvitation(invitation.inviteId);
 
   return user;
+};
+
+
+// User
+
+export const findUserById = async (userId: User['userId']): Promise<UserWithoutPasswordHash | null> => {
+   return await findUserByIdRepository(userId);
+
+};
+
+export const findUserByEmail = async (userEmail: User['userEmail']): Promise<UserWithoutPasswordHash | null> => {
+  return await findUserByEmailRepository(userEmail);
 };

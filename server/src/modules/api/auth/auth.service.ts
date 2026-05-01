@@ -49,6 +49,7 @@ type VerifySessionToken = Promise<{
 export const verifySessionToken = async (token: string): VerifySessionToken => {
   const hashedToken = hashSessionToken(token);
   const session = await findUserSessionByHashedToken(hashedToken);
+  console.log(session);
 
   // Must keep the order!
   if(!session) return {status: 'not-found', session};
@@ -89,6 +90,3 @@ export const hashPassword = async (password: Password): Promise<string> => {
 export const compare = async (passwordHash: string, password: Password): Promise<boolean> => {
     return await argon2.verify(passwordHash, password);
 };
-
-
-

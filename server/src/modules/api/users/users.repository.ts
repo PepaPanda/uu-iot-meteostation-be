@@ -6,20 +6,28 @@ import ms from 'ms';
 import type { Invitation } from '../auth/auth.schema';
 
 
-const userSelect = `
+const userSelect = ({password = false}: {password?: boolean}) => {
+  return `
   user_id AS "userId",
   user_email AS "userEmail",
-  user_password_hash AS "userPasswordHash",
+  ${password ? 'user_password_hash AS "userPasswordHash",' : ''}
   user_role AS "userRole",
   user_nickname AS "userNickname",
   user_created_at AS "userCreatedAt",
-  user_updated_at AS "userUpdatedAt"
-`;
+  user_updated_at AS "userUpdatedAt"`;  
+};
 
 
+type UserQueryOptions = { includePassword?: boolean };
+const userQueryOptionsDefault = { includePassword: false };
 
-export const findUserByEmail = async (email: Email): Promise<User> => {
-    const result = await dbPool.query(`SELECT ${userSelect} FROM users WHERE user_email = $1 LIMIT 1`, [email]);
+export const findUserByEmail = async (email: Email, options: UserQueryOptions = userQueryOptionsDefault): Promise<User> => {
+    const result = await dbPool.query(`SELECT ${userSelect({password: options.includePassword})} FROM users WHERE user_email = $1 LIMIT 1`, [email]);
+    return getFirstRow(result);
+};
+
+export const findUserById = async (id: User['userId'], options: UserQueryOptions = userQueryOptionsDefault): Promise<User> => {
+    const result = await dbPool.query(`SELECT ${userSelect({password: options.includePassword})} FROM users WHERE user_id = $1 LIMIT 1`, [id]);
     return getFirstRow(result);
 };
 
