@@ -5,7 +5,7 @@ import z from 'zod/v3';
 export const userSchema = z.object({
   userId: z.number(),
   userEmail: z.string().email(),
-  userPasswordHash: z.string(),
+  userPasswordHash: z.string().optional(),
   userRole: z.enum(['guest', 'operator', 'supervisor', 'administrator']),
   userNickname: z.string(),
   userCreatedAt: z.string().datetime(),
@@ -14,6 +14,10 @@ export const userSchema = z.object({
 });
 
 export type User = z.infer<typeof userSchema>;
+
+export const userWithoutPasswordSchema = userSchema.omit({userPasswordHash: true});
+
+export type UserWithoutPasswordHash = z.infer<typeof userWithoutPasswordSchema>;
 
 export const emailSchema = z.string().email();
 export type Email = z.infer<typeof emailSchema>;

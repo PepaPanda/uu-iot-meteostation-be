@@ -30,7 +30,6 @@ const envSchema = z.object({
   DB_URL: z.string().startsWith('postgresql://'),
   SESSION_MAX_AGE: z.custom<StringValue>().default('1d'),
   SESSION_TOKEN_ROTATE_AFTER: z.custom<StringValue>().default('15m'),
-  // BCRYPT_ROUNDS: z.coerce.number().min(10).max(20).default(12),
 });
 
 export type Env = z.infer<typeof envSchema>;
