@@ -1,5 +1,5 @@
 import type { QueryResult } from 'pg';
-import { isObjectEmpty } from '../shared/helpers';
+import { isObjectEmpty } from '../shared/helpers/utils';
 
 export const getFirstRow = (queryResult: QueryResult) => {
     const { rows } = queryResult;
