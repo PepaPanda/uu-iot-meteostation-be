@@ -101,7 +101,7 @@ export const createUser = async (
   passwordHash: User['userPasswordHash'],
   nickname: User['userNickname'],
   role: User['userRole'] = 'guest',
-): Promise<User> => {
+): Promise<User | null> => {
   const result = await dbPool.query<User>(
     `INSERT INTO "users" (
       "user_email",

@@ -1,14 +1,14 @@
-import type { QueryResult } from 'pg';
-import { isObjectEmpty } from '../shared/helpers/utils';
+import type { QueryResult, QueryResultRow } from 'pg';
 
-export const getFirstRow = (queryResult: QueryResult) => {
-    const { rows } = queryResult;
-    const row = isObjectEmpty(rows) ? null : rows[0];
-    return row;
+export const getFirstRow = <T extends QueryResultRow>(
+  queryResult: QueryResult<T>,
+): T | null => {
+  return queryResult.rows[0] ?? null;
 };
 
-export const getAllRows = (queryResult: QueryResult) => {
-    const { rows } = queryResult;
-    const row = isObjectEmpty(rows) ? null : rows;
-    return row;
+export const getAllRows = <T extends QueryResultRow>(
+  queryResult: QueryResult<T>,
+): T[] => {
+  return queryResult.rows;
 };
+
