@@ -65,7 +65,7 @@ export const createUser = async (
   password: string,
   plainInviteToken: string,
   nickname: string,
-): Promise<User> => {
+): Promise<User | null> => {
   const hashedPassword = await hashPassword(password);
   const hashedInviteToken = hashInviteToken(plainInviteToken);
 

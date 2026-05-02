@@ -1,5 +1,11 @@
 import express from 'express';
 
+import requireUserRole from '../../../middleware/requireUserRole';
+import { validateBody } from '../../../middleware/validateBody';
+import authenticate from '../../../middleware/authenticate';
+import { createGatewaySchema } from './gateways.schema';
+import { createGateway as createGatewayController } from './gatteways.controller';
+
 const gatewaysRouter = express.Router();
 
 gatewaysRouter.get('/', (req, res) => {
@@ -14,9 +20,7 @@ gatewaysRouter.patch('/:gatewayId', (req, res) => {
   res.send('edit a specific gateway');
 });
 
-gatewaysRouter.post('/', (req, res) => {
-  res.send('add a new router to the list, should return a unique token that will be visible only temporarily for the client. This token will be inserted manually to the gateway config.');
-});
+gatewaysRouter.post('/', authenticate, requireUserRole('operator'), validateBody(createGatewaySchema), createGatewayController);
 
 gatewaysRouter.delete('/:gatewayId', (req, res) => {
   res.send('Deletes a gateway. Related telemetry is cascade deleted by DB.');

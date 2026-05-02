@@ -4,7 +4,7 @@ import type { Session } from './auth.schema';
 
 export const getRequiredSession = (req: Request): Session => {
   if (!req.session) {
-    throw new UnauthorizedError('Session is required');
+    throw new UnauthorizedError('A valid session is required');
   }
 
   return req.session;

@@ -1,6 +1,8 @@
 import { Request, Response, NextFunction } from 'express';
 import AppError, { BadRequestError } from '../shared/errors';
 
+import { DatabaseError } from 'pg';
+
 export const globalErrorHandler = (
   err: unknown,
   req: Request,
@@ -22,6 +24,41 @@ export const globalErrorHandler = (
       message: err.message,
       details: err.details
     });
+  }
+
+  if (err instanceof DatabaseError) {
+    if (err.code === '23505') {
+      res.status(409).json({
+        message: 'Resource already exists',
+      });
+      return;
+    }
+
+    if (err.code === '23503') {
+      res.status(409).json({
+        message: 'Referenced resource does not exist',
+      });
+      return;
+    }
+
+    if (err.code === '23502') {
+      res.status(400).json({
+        message: 'Missing required value',
+      });
+      return;
+    }
+
+    if (err.code === '23514') {
+      res.status(400).json({
+        message: 'Invalid value',
+      });
+      return;
+    }
+
+    res.status(500).json({
+      message: 'Database error',
+    });
+    return;
   }
 
   return res.status(500).json({

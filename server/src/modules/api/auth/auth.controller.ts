@@ -57,6 +57,8 @@ export const registerFromInvite = async (req: TypedRequest<RegisterUserRequestDt
 
     const user = await createUserService(password, token, nickname);
 
+    if(!user) throw new InternalServerError('Could not create user');
+
     const sessionToken = await generateAndReturnNewSessionToken(user.userId);
 
     res.cookie('meteoSessionToken', sessionToken, {
