@@ -1,11 +1,12 @@
 import express from 'express';
 import { validateBody } from '../../../middleware/validateBody';
 import { collectTelemetrySchema } from '../../../shared/zodSchemas';
+import authenticateGateway from '../../../middleware/authenticateGateway';
+import { collectTelemetry as collectTelemetryController } from './data.controller';
+
 const dataRouter = express.Router();
 
-dataRouter.post('/send', validateBody(collectTelemetrySchema), (req, res) => {
-    res.json({responsibility: 'collect data from gw and save it. Send SSE to all opened frontends', body: req.body, headers: req.headers});
-});
+dataRouter.post('/send', authenticateGateway, validateBody(collectTelemetrySchema), collectTelemetryController);
 
 
 export default dataRouter;

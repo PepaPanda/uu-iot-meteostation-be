@@ -2,7 +2,7 @@ import type { Response, NextFunction} from 'express';
 import { ZodSchema, ZodError } from 'zod/v3';
 import { BadRequestError, UnprocessableEntityError } from '../shared/errors';
 
-import { isObjectEmpty } from '../shared/helpers';
+import { isObjectEmpty } from '../shared/helpers/utils';
 
 import { TypedRequest } from '../shared/types';
 

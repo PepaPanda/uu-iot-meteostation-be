@@ -8,7 +8,7 @@ import { Session } from './auth.schema';
 import env from '../../../env';
 import ms from 'ms';
 
-import { toTime } from '../../../shared/helpers';
+import { toTime } from '../../../shared/helpers/utils';
 
 //Helpers
 const generateSessionToken = (): string => {
