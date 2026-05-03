@@ -1,7 +1,7 @@
 import argon2 from 'argon2';
 import { Session } from './auth.types';
 import { generateSessionToken, hashSessionToken, isSessionRevoked, isSessionExpired, shouldRotateSessionToken } from './auth.helpers';
-import { createUserSession, findUserSessionByHashedToken, revokeUserSessionByHashedToken, rotateUserSessionToken } from './auth.repository';
+import { createUserSession, findUserSessionByHashedToken, revokeUserSessionByHashedToken, rotateUserSessionToken, revokeAllSessionsByUserId } from './auth.repository';
 
 // Session
 export const generateAndReturnNewSessionToken = async (userId: number): Promise<string> => {
@@ -17,8 +17,8 @@ type VerifySessionToken = Promise<{
   session: Session | null
 }>
 
-export const verifySessionToken = async (token: string): VerifySessionToken => {
-  const hashedToken = hashSessionToken(token);
+export const verifySessionToken = async (plainToken: string): VerifySessionToken => {
+  const hashedToken = hashSessionToken(plainToken);
   const session = await findUserSessionByHashedToken(hashedToken);
   console.log(session);
 
@@ -32,9 +32,13 @@ export const verifySessionToken = async (token: string): VerifySessionToken => {
 
 };
 
-export const revokeSession = async (token: string): Promise<void> => {
-  const hashedToken = hashSessionToken(token);
-  await revokeUserSessionByHashedToken(hashedToken);
+export const revokeSession = async (tokenHash: string): Promise<void> => {
+  await revokeUserSessionByHashedToken(tokenHash);
+  return;
+};
+
+export const revokeAllSessions = async (userId: number): Promise<void> => {
+  await revokeAllSessionsByUserId(userId);
   return;
 };
 

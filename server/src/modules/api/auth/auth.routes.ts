@@ -1,6 +1,6 @@
 import express from 'express';
 
-import { login as loginController,  registerFromInvite as registerFromInviteController, getAuthenticatedUserInformation as getAuthenticatedUserInformationController } from './auth.controller';
+import { login as loginController,  registerFromInvite as registerFromInviteController, getAuthenticatedUserInformation as getAuthenticatedUserInformationController, logout as logoutController, logoutEverywhere as logoutEverywhereController } from './auth.controller';
 
 import { validateBody } from '../../../middleware/validateBody';
 import { loginUserSchema } from '../../../shared/zodSchemas';
@@ -14,13 +14,14 @@ const authRouter = express.Router();
 
 authRouter.post('/login', validateBody(loginUserSchema), requireNoActiveSession, loginController);
 
-authRouter.post('/logout', authenticate,  (req, res) => {
-  res.send('logout post');
-});
+authRouter.post('/logout', authenticate,  logoutController);
+
+authRouter.post('/logout-everywhere', authenticate, logoutEverywhereController);
 
 authRouter.get('/me', authenticate, getAuthenticatedUserInformationController);
 
 authRouter.post('/register-from-invite/', validateBody(registerFromInviteUserSchema), requireNoActiveSession, registerFromInviteController);
+
 
 
 export default authRouter;
