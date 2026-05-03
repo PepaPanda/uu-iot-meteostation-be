@@ -1,6 +1,13 @@
 import express from 'express';
 import authenticate from '../../../middleware/authenticate';
 
+import requireUserRole from '../../../middleware/requireUserRole';
+import { validateBody } from '../../../middleware/validateBody';
+
+import { inviteUserSchema } from './users.schema';
+
+import { inviteController } from './users.controller';
+
 const usersRouter = express.Router();
 
 usersRouter.patch('/update', (req, res) => {
@@ -15,9 +22,7 @@ usersRouter.delete('/:userId', (req, res) => {
     res.json({responsibility: 'delete user', body: req.body});
 });
 
-usersRouter.post('/invite', authenticate,  (req, res) => {
-    res.json({responsibility: 'this will return an invitation link for any user. Target e-mail is required in body', body: req.body});
-});
+usersRouter.post('/invite', authenticate, requireUserRole('administrator'), validateBody(inviteUserSchema), inviteController);
 
 usersRouter.get('/',  (req, res) => {
     res.json({responsibility: 'Returns users for administration.', body: req.body});

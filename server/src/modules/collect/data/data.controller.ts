@@ -11,5 +11,5 @@ export const collectTelemetry = async (req: TypedRequest<CollectTelemetryDto>, r
 
     await collectTelemetryService(req.body, gateway.gatewayId);
 
-    res.status(201);
+    res.status(201).send();
 };

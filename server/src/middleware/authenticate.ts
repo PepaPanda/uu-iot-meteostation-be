@@ -15,6 +15,7 @@ export default async (req: Request, res: Response, next: NextFunction): Promise<
 
     //If token is present, verify it and get session info
     const { status, session } = await verifySessionToken(sessionToken);
+    console.log(status);
 
     //403 for bad tokens
     if(!session || status === 'revoked' || status === 'not-found' || status === 'session-expired') {
@@ -26,13 +27,14 @@ export default async (req: Request, res: Response, next: NextFunction): Promise<
 
     //Rotate new token for valid sessions if needed
     if(status === 'token-expired') {
+        console.log('rokek');
         const newToken = await rotateToken(session.sessionId, sessionToken);
         res.cookie('meteoSessionToken', newToken, {
                 httpOnly: true,
                 secure: env.NODE_ENV === 'production',
-                sameSite: 'strict',
+                sameSite: 'lax',
                 path: '/',
-                maxAge: ms(env.SESSION_TOKEN_ROTATE_AFTER),
+                maxAge: ms(env.SESSION_MAX_AGE),
             });
 
         return next();

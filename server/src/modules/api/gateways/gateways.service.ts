@@ -3,10 +3,10 @@ import {
   findGatewayById,
   findGatewayByTokenHash,
 } from './gateways.repository';
-import type { Gateway } from './gateways.schema';
+import type { Gateway } from './gateways.types';
 import { hashGatewayToken, generateNewGatewayToken } from './gateways.helpers';
 
-import type { CreateGatewayRequestDto } from './gateways.schema';
+import type { CreateGatewayRequestDto } from './gateways.dto';
 
 export const getGatewayByPlainToken = async (
   gatewayToken: string,

@@ -6,4 +6,5 @@ export const collectTelemetry = async (
   gatewayId: number,
 ): Promise<void> => {
   await createTelemetry(telemetry, gatewayId);
+  return;
 };

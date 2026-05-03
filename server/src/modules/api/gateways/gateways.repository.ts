@@ -1,6 +1,6 @@
 import { dbPool } from '../../../db/pool';
 import { getFirstRow } from '../../../db/helpers';
-import type { Gateway } from './gateways.schema';
+import type { Gateway } from './gateways.types';
 
 export const findGatewayById = async (
   gatewayId: number,
