@@ -71,6 +71,17 @@ export const revokeUserSessionByHashedToken = async (
   );
 };
 
+export const revokeAllSessionsByUserId = async (
+  userId: number,
+): Promise<void> => {
+  await dbPool.query(
+    `UPDATE "user_sessions"
+     SET "session_revoked_at" = NOW()
+     WHERE "session_user_id" = $1`,
+    [userId],
+  );
+};
+
 export const rotateUserSessionToken = async (
   sessionId: number,
   oldTokenHash: string,

@@ -1,10 +1,10 @@
 import type { Response, Request } from 'express';
-import { generateAndReturnNewSessionToken, compare as validatePassword } from './auth.service';
+import { generateAndReturnNewSessionToken, compare as validatePassword, revokeSession, revokeAllSessions } from './auth.service';
 import { createUser as createUserService, findUserById as findUserByIdService } from '../users/users.service';
 
 import { findUserByEmail } from '../users/users.repository';
 
-import { attachSessionCookie, getRequiredSession } from './auth.helpers';
+import { attachSessionCookie, getRequiredSession, clearSessionCookie } from './auth.helpers';
 
 import type { LoginUserRequestDto } from './auth.dto';
 import { toLoginResponseDto, toCurrentUserInfoResponseDto } from './auth.dto';
@@ -61,4 +61,18 @@ export const getAuthenticatedUserInformation = async (req: Request, res: Respons
     const user = await findUserByIdService(session.userId);
     if(!user) throw new NotFoundError('User not found');
     res.json(toCurrentUserInfoResponseDto(user));
+};
+
+export const logout = async (req: Request, res: Response) => {
+    const session = getRequiredSession(req);
+    await revokeSession(session.tokenHash);
+    clearSessionCookie(res);
+    res.status(204).send();
+};
+
+export const logoutEverywhere = async (req: Request, res: Response) => {
+    const session = getRequiredSession(req);
+    await revokeAllSessions(session.userId);
+    clearSessionCookie(res);
+    res.status(204).send();
 };
