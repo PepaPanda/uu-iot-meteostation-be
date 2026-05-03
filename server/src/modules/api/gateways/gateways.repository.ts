@@ -2,19 +2,30 @@ import { dbPool } from '../../../db/pool';
 import { getFirstRow } from '../../../db/helpers';
 import type { Gateway } from './gateways.types';
 
-export const findGatewayById = async (
-  gatewayId: number,
-): Promise<Gateway | null> => {
-  const result = await dbPool.query<Gateway>(
-    `
-      SELECT
+
+type GatewayQueryOptions = { includeTokenHash?: boolean };
+const gatewayQueryOptionsDefault = { includeTokenHash: false };
+
+
+const gatewaySelect = (options: GatewayQueryOptions) => {
+  return `
         gateway_id AS "gatewayId",
-        gateway_token_hash AS "gatewayTokenHash",
+        ${options.includeTokenHash === true && 'gateway_token_hash AS "gatewayTokenHash,'}
         gateway_description AS "gatewayDescription",
         gateway_name AS "gatewayName",
         gateway_location AS "gatewayLocation",
         gateway_latitude AS "gatewayLatitude",
-        gateway_longitude AS "gatewayLongitude"
+        gateway_longitude AS "gatewayLongitude"`;
+};
+
+export const findGatewayById = async (
+  gatewayId: number,
+  options: GatewayQueryOptions = gatewayQueryOptionsDefault
+): Promise<Gateway | null> => {
+  const result = await dbPool.query<Gateway>(
+    `
+      SELECT
+        ${gatewaySelect(options)}
       FROM gateways
       WHERE gateway_id = $1
       LIMIT 1
@@ -27,17 +38,12 @@ export const findGatewayById = async (
 
 export const findGatewayByTokenHash = async (
   gatewayTokenHash: string,
+  options: GatewayQueryOptions = gatewayQueryOptionsDefault
 ): Promise<Gateway | null> => {
   const result = await dbPool.query<Gateway>(
     `
       SELECT
-        gateway_id AS "gatewayId",
-        gateway_token_hash AS "gatewayTokenHash",
-        gateway_description AS "gatewayDescription",
-        gateway_name AS "gatewayName",
-        gateway_location AS "gatewayLocation",
-        gateway_latitude AS "gatewayLatitude",
-        gateway_longitude AS "gatewayLongitude"
+        ${gatewaySelect(options)}
       FROM gateways
       WHERE gateway_token_hash = $1
       LIMIT 1
@@ -87,4 +93,162 @@ export const createGateway = async (
   );
 
   return getFirstRow(result);
+};
+
+
+type FindGatewaysOptions = {
+  page: number;
+  pageSize: number;
+  searchString?: string;
+};
+
+export type FindGatewaysResult = {
+  gateways: Gateway[];
+  totalCount: number;
+};
+
+
+export const findGateways = async ({
+  page,
+  pageSize,
+  searchString,
+}: FindGatewaysOptions): Promise<FindGatewaysResult> => {
+  const offset = (page - 1) * pageSize;
+  const search = searchString?.trim();
+
+  const values: unknown[] = [];
+  const whereParts: string[] = [];
+
+  if (search) {
+    values.push(`%${search}%`);
+
+    whereParts.push(`
+      (
+        "gateway_name" ILIKE $${values.length}
+        OR "gateway_description" ILIKE $${values.length}
+        OR "gateway_location" ILIKE $${values.length}
+      )
+    `);
+  }
+
+  const whereSql = whereParts.length > 0
+    ? `WHERE ${whereParts.join(' AND ')}`
+    : '';
+
+  const countResult = await dbPool.query(
+    `
+      SELECT COUNT(*) AS "total_count"
+      FROM "gateways"
+      ${whereSql}
+    `,
+    values,
+  );
+
+  const totalCount = Number(countResult.rows[0].total_count);
+
+  const listValues = [...values];
+
+  listValues.push(pageSize);
+  const limitPlaceholder = `$${listValues.length}`;
+
+  listValues.push(offset);
+  const offsetPlaceholder = `$${listValues.length}`;
+
+  const gatewaysResult = await dbPool.query<Gateway>(
+    `
+      SELECT
+        "gateway_id"::int AS "id",
+        "gateway_name" AS "name",
+        "gateway_description" AS "description",
+        "gateway_location" AS "location",
+        "gateway_latitude" AS "latitude",
+        "gateway_longitude" AS "longitude",
+      FROM "gateways"
+      ${whereSql}
+      ORDER BY "gateway_created_at" DESC
+      LIMIT ${limitPlaceholder}
+      OFFSET ${offsetPlaceholder}
+    `,
+    listValues,
+  );
+
+  return {
+    gateways: gatewaysResult.rows,
+    totalCount,
+  };
+};
+
+type UpdateGatewayInput = Partial<{
+  gateway_name: string;
+  gateway_description: string | null;
+  gateway_location: string | null;
+  gateway_latitude: number | null;
+  gateway_longitude: number | null;
+}>;
+
+export const updateGateway = async (
+  gatewayId: number,
+  data: UpdateGatewayInput,
+): Promise<Gateway | null> => {
+  const entries = Object.entries(data).filter(([, value]) => value !== undefined);
+
+  const setSql = entries
+    .map(([column], index) => `"${column}" = $${index + 1}`)
+    .join(', ');
+
+  const values = entries.map(([, value]) => value);
+
+  const result = await dbPool.query<Gateway>(
+    `
+      UPDATE "gateways"
+      SET ${setSql}
+      WHERE "gateway_id" = $${values.length + 1}
+      RETURNING
+        "gateway_id" AS "gatewayId",
+        "gateway_name" AS "gatewayName",
+        "gateway_description" AS "gatewayDescription",
+        "gateway_location" AS "gatewayLocation",
+        "gateway_latitude" AS "gatewayLatitude",
+        "gateway_longitude" AS "gatewayLongitude"
+    `,
+    [...values, gatewayId],
+  );
+
+  return getFirstRow(result);
+};
+
+export const deleteGateway = async (gatewayId: number): Promise<Gateway | null> => {
+  const result = await dbPool.query<Gateway>(
+    `
+      DELETE FROM "gateways"
+      WHERE "gateway_id" = $1
+      RETURNING
+        "gateway_id" AS "gatewayId",
+        "gateway_name" AS "gatewayName",
+        "gateway_description" AS "gatewayDescription",
+        "gateway_location" AS "gatewayLocation",
+        "gateway_latitude" AS "gatewayLatitude",
+        "gateway_longitude" AS "gatewayLongitude"
+    `,
+    [gatewayId],
+  );
+
+  return getFirstRow(result);
+};
+
+export const rotateGatewaySecret = async (
+  gatewayId: number,
+  gatewayTokenHash: string,
+): Promise<number | null> => {
+  const result = await dbPool.query<{ gatewayId: number }>(
+    `
+      UPDATE "gateways"
+      SET "gateway_token_hash" = $1
+      WHERE "gateway_id" = $2
+      RETURNING "gateway_id" AS "gatewayId"
+    `,
+    [gatewayTokenHash, gatewayId],
+  );
+
+  return getFirstRow(result)?.gatewayId ?? null;
 };

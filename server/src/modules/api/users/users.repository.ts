@@ -20,12 +20,12 @@ const userSelect = ({password = false}: {password?: boolean}) => {
 type UserQueryOptions = { includePassword?: boolean };
 const userQueryOptionsDefault = { includePassword: false };
 
-export const findUserByEmail = async (email: string, options: UserQueryOptions = userQueryOptionsDefault): Promise<User> => {
+export const findUserByEmail = async (email: string, options: UserQueryOptions = userQueryOptionsDefault): Promise<User | null> => {
     const result = await dbPool.query(`SELECT ${userSelect({password: options.includePassword})} FROM users WHERE user_email = $1 LIMIT 1`, [email]);
     return getFirstRow(result);
 };
 
-export const findUserById = async (id: User['userId'], options: UserQueryOptions = userQueryOptionsDefault): Promise<User> => {
+export const findUserById = async (id: User['userId'], options: UserQueryOptions = userQueryOptionsDefault): Promise<User | null> => {
     const result = await dbPool.query(`SELECT ${userSelect({password: options.includePassword})} FROM users WHERE user_id = $1 LIMIT 1`, [id]);
     return getFirstRow(result);
 };

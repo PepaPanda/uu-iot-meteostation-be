@@ -3,32 +3,22 @@ import express from 'express';
 import requireUserRole from '../../../middleware/requireUserRole';
 import { validateBody } from '../../../middleware/validateBody';
 import authenticate from '../../../middleware/authenticate';
-import { createGatewaySchema } from './gateways.schema';
-import { createGateway as createGatewayController } from './gatteways.controller';
+import { createGatewaySchema, listGatewaysSchema, updateGatewaySchema, gatewayIdParamsSchema } from './gateways.schema';
+import { createGateway as createGatewayController, listGateways as listGatewaysController, getGateway as getGatewayController, updateGateway as updateGatewayController, deleteGateway as deleteGatewayController, rotateGatewaySecret as rotateGatewaySecretController } from './gatteways.controller';
+import { validateParams } from '../../../middleware/validateParams';
 
 const gatewaysRouter = express.Router();
 
-gatewaysRouter.get('/', (req, res) => {
-  res.send('Returns configured meteo stations/gateways.');
-});
+gatewaysRouter.get('/', authenticate, requireUserRole('guest'), validateBody(listGatewaysSchema), listGatewaysController);
 
-gatewaysRouter.get('/:gatewayId', (req, res) => {
-  res.send('Returns a specific gateway.');
-});
+gatewaysRouter.get('/:gatewayId', authenticate, requireUserRole('guest'), validateParams(gatewayIdParamsSchema), getGatewayController);
 
-gatewaysRouter.patch('/:gatewayId', (req, res) => {
-  res.send('edit a specific gateway');
-});
+gatewaysRouter.patch('/:gatewayId', authenticate, requireUserRole('operator'), validateParams(updateGatewaySchema), updateGatewayController);
 
 gatewaysRouter.post('/', authenticate, requireUserRole('operator'), validateBody(createGatewaySchema), createGatewayController);
 
-gatewaysRouter.delete('/:gatewayId', (req, res) => {
-  res.send('Deletes a gateway. Related telemetry is cascade deleted by DB.');
-});
+gatewaysRouter.delete('/:gatewayId', authenticate, requireUserRole('supervisor'), validateParams(gatewayIdParamsSchema), deleteGatewayController);
 
-
-gatewaysRouter.post(':gatewayId/rotate-secret', (req, res) => {
-  res.send('Generates new secret for gateway and invalidates previous one.');
-});
+gatewaysRouter.post(':gatewayId/rotate-secret', authenticate, requireUserRole('supervisor'), validateParams(gatewayIdParamsSchema), rotateGatewaySecretController);
 
 export default gatewaysRouter;
