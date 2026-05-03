@@ -10,3 +10,5 @@ export type TypedRequest<
   Query = EmptyQuery,
   ResBody = unknown,
 > = Request<Params, ResBody, Body, Query>;
+
+export type Empty = Record<string, never>;

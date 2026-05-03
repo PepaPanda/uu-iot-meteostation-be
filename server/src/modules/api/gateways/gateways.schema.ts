@@ -1,6 +1,6 @@
 import z from 'zod/v3';
 
-// Request validation schemas
+// Request validation schemas for BODY
 
 export const listGatewaysSchema = z.object({
   page: z.coerce.number().int().positive().default(1),
@@ -16,18 +16,7 @@ export const createGatewaySchema = z.object({
   longitude: z.number().gte(-180).lte(180),
 });
 
-
-export const getSpecificGatewaySchema = z.object({
-  params: z.object({
-    gatewayId: z.string().regex(/^\d+$/),
-  }),
-});
-
 export const updateGatewaySchema = z.object({
-  params: z.object({
-    gatewayId: z.string().regex(/^\d+$/),
-  }),
-  body: z.object({
     name: z.string().trim().min(1).max(255).optional(),
     description: z.string().trim().min(1).max(2000).optional(),
     location: z.string().trim().min(1).max(255).optional(),
@@ -35,18 +24,9 @@ export const updateGatewaySchema = z.object({
     longitude: z.number().gte(-180).lte(180).optional(),
   }).refine((v) => Object.keys(v).length > 0, {
     message: 'At least one field must be provided',
-  }),
 });
 
-export const rotateGatewaySecretSchema = z.object({
-  params: z.object({
-    gatewayId: z.string().regex(/^\d+$/),
-  }),
-});
-
-
-export const deleteGatewaySchema = z.object({
-  params: z.object({
-    gatewayId: z.string().regex(/^\d+$/),
-  }),
+// Request validation schemas for PARAMS
+export const gatewayIdParamsSchema = z.object({
+  gatewayId: z.string().regex(/^\d+$/),
 });

@@ -1,6 +1,6 @@
 export type Gateway = {
   gatewayId: number;
-  gatewayTokenHash: string;
+  gatewayTokenHash?: string;
   gatewayDescription: string | null;
   gatewayName: string;
   gatewayLocation: string | null;

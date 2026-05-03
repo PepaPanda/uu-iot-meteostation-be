@@ -2,9 +2,15 @@ import {
   createGateway as createGatewayRepository,
   findGatewayById,
   findGatewayByTokenHash,
+  findGateways,
+  updateGateway,
+  deleteGateway,
+  rotateGatewaySecret
 } from './gateways.repository';
 import type { Gateway } from './gateways.types';
 import { hashGatewayToken, generateNewGatewayToken } from './gateways.helpers';
+
+import { UpdateGatewayRequestDto } from './gateways.dto';
 
 import type { CreateGatewayRequestDto } from './gateways.dto';
 
@@ -49,4 +55,60 @@ export const createGateway = async (
     gateway,
     gatewayToken,
   };
+};
+
+export const listMatchingGatewaysWithPagination = async (
+  page: number,
+  pageSize: number,
+  search?: string,
+) => {
+  const { gateways, totalCount } = await findGateways(
+    {page,
+    pageSize,
+    searchString: search
+  });
+
+  return {
+    gateways,
+    pagination: {
+      page,
+      pageSize,
+      totalCount,
+      totalPages: Math.ceil(totalCount / pageSize),
+    },
+  };
+};
+
+export const updateGatewayByIdService = async (
+  gatewayId: number,
+  dto: UpdateGatewayRequestDto,
+): Promise<Gateway | null> => {
+  const updatedGateway = await updateGateway(gatewayId, {
+    gateway_name: dto.name,
+    gateway_description: dto.description,
+    gateway_location: dto.location,
+    gateway_latitude: dto.latitude,
+    gateway_longitude: dto.longitude,
+  });
+
+  return updatedGateway;
+};
+
+export const deleteGatewayByIdService = async (
+  gatewayId: number,
+): Promise<Gateway | null> => {
+  return await deleteGateway(gatewayId);
+};
+
+export const rotateGatewaySecretService = async (
+  gatewayId: number,
+): Promise<string | null> => {
+  const token = generateNewGatewayToken();
+  const tokenHash = hashGatewayToken(token);
+
+  const updatedGatewayId = await rotateGatewaySecret(gatewayId, tokenHash);
+
+  if (!updatedGatewayId) return null;
+
+  return token;
 };
