@@ -1,24 +1,20 @@
 import type { Response, Request } from 'express';
-import { generateAndReturnNewSessionToken } from './auth.service';
-
-import type { LoginUserRequestDto } from './auth.schema';
-import type { RegisterUserRequestDto } from '../users/users.schema';
+import { generateAndReturnNewSessionToken, compare as validatePassword } from './auth.service';
+import { createUser as createUserService, findUserById as findUserByIdService } from '../users/users.service';
 
 import { findUserByEmail } from '../users/users.repository';
 
-import { NotFoundError, UnauthorizedError, InternalServerError } from '../../../shared/errors';
+import { attachSessionCookie, getRequiredSession } from './auth.helpers';
 
-import { compare as validatePassword } from './auth.service';
+import type { LoginUserRequestDto } from './auth.dto';
+import { toLoginResponseDto, toCurrentUserInfoResponseDto } from './auth.dto';
+import type { RegisterUserRequestDto } from '../users/users.dto';
+
+import { NotFoundError, UnauthorizedError, InternalServerError } from '../../../shared/errors';
 
 import { TypedRequest } from '../../../shared/types';
 
-import { createUser as createUserService } from '../users/users.service';
 
-import { findUserById as findUserByIdService } from '../users/users.service';
-
-import env from '../../../env';
-import ms from 'ms';
-import { getRequiredSession } from './auth.helpers';
 export const login = async (req: TypedRequest<LoginUserRequestDto>, res: Response) => {
     const { email, password } = req.body;
 
@@ -26,7 +22,6 @@ export const login = async (req: TypedRequest<LoginUserRequestDto>, res: Respons
     if(!user.userPasswordHash) throw new InternalServerError();
 
     if(!user) throw new NotFoundError('User not found');
-    const {userId, userEmail, userRole, userNickname} = user;
 
     let passwordIsValid: boolean;
     try {
@@ -40,16 +35,11 @@ export const login = async (req: TypedRequest<LoginUserRequestDto>, res: Respons
 
     const sessionToken = await generateAndReturnNewSessionToken(user.userId);
 
+    attachSessionCookie(res, sessionToken);
+
     res
-        .cookie('meteoSessionToken', sessionToken, {
-            httpOnly: true,
-            secure: env.NODE_ENV === 'production',
-            sameSite: 'strict',
-            path: '/',
-            maxAge: ms(env.SESSION_TOKEN_ROTATE_AFTER),
-        })
         .status(200)
-        .json({user: {userId, userRole, userEmail, userNickname}});
+        .json(toLoginResponseDto(user));
 };
 
 export const registerFromInvite = async (req: TypedRequest<RegisterUserRequestDto>, res: Response): Promise<void> => {
@@ -61,27 +51,14 @@ export const registerFromInvite = async (req: TypedRequest<RegisterUserRequestDt
 
     const sessionToken = await generateAndReturnNewSessionToken(user.userId);
 
-    res.cookie('meteoSessionToken', sessionToken, {
-        httpOnly: true,
-        secure: env.APP_STAGE === 'production',
-        sameSite: 'lax',
-        maxAge: ms(env.SESSION_MAX_AGE),
-        path: '/',
-    });
+    attachSessionCookie(res, sessionToken);
 
-    res.status(201).json({
-        user: {
-        id: user.userId,
-        email: user.userEmail,
-        nickname: user.userNickname,
-        role: user.userRole,
-        },
-    });
+    res.status(201).json(toLoginResponseDto(user));
 };
 
 export const getAuthenticatedUserInformation = async (req: Request, res: Response) => {
     const session = getRequiredSession(req);
     const user = await findUserByIdService(session.userId);
     if(!user) throw new NotFoundError('User not found');
-    res.json(user);
+    res.json(toCurrentUserInfoResponseDto(user));
 };

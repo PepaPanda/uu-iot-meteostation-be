@@ -35,4 +35,6 @@ export const createTelemetry = async (
       telemetry.nodeWifiStrength ?? null,
     ],
   );
+  
+  return;
 };

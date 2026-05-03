@@ -1,17 +1,6 @@
 import z from 'zod/v3';
 
-// App object
-export type Gateway = {
-  gatewayId: number;
-  gatewayTokenHash: string;
-  gatewayDescription: string | null;
-  gatewayName: string;
-  gatewayLocation: string | null;
-  gatewayLatitude: string | null;
-  gatewayLongitude: string | null;
-};
-
-// Request DTOs
+// Request validation schemas
 
 export const listGatewaysSchema = z.object({
   page: z.coerce.number().int().positive().default(1),
@@ -27,15 +16,12 @@ export const createGatewaySchema = z.object({
   longitude: z.number().gte(-180).lte(180),
 });
 
-export type CreateGatewayRequestDto = z.infer<typeof createGatewaySchema>;
 
 export const getSpecificGatewaySchema = z.object({
   params: z.object({
     gatewayId: z.string().regex(/^\d+$/),
   }),
 });
-
-export type getGatewayByIdRequestDto = z.infer<typeof getSpecificGatewaySchema>;
 
 export const updateGatewaySchema = z.object({
   params: z.object({
@@ -52,20 +38,15 @@ export const updateGatewaySchema = z.object({
   }),
 });
 
-export type updateGatewayRequestDto = z.infer<typeof updateGatewaySchema>;
-
 export const rotateGatewaySecretSchema = z.object({
   params: z.object({
     gatewayId: z.string().regex(/^\d+$/),
   }),
 });
 
-export type rotateGatewaySecretRequestDto = z.infer<typeof rotateGatewaySecretSchema>;
 
 export const deleteGatewaySchema = z.object({
   params: z.object({
     gatewayId: z.string().regex(/^\d+$/),
   }),
 });
-
-export type deleteGatewayRequestDto = z.infer<typeof deleteGatewaySchema>;

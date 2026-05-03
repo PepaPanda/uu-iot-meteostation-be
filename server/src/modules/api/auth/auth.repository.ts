@@ -1,6 +1,6 @@
 import { dbPool } from '../../../db/pool';
 
-import type { Session } from './auth.schema';
+import type { Session } from './auth.types';
 import { getFirstRow } from '../../../db/helpers';
 
 import env from '../../../env';
@@ -46,7 +46,7 @@ export const findUserSessionByHashedToken = async (
         session_id AS "sessionId",
         session_user_id AS "userId",
         session_token_hash AS "tokenHash",
-        session_token_rotated_at AS "rotatedAt",
+        session_token_rotated_at AS "tokenRotatedAt",
         session_expires_at AS "expiresAt",
         session_created_at AS "createdAt",
         session_revoked_at AS "revokedAt"

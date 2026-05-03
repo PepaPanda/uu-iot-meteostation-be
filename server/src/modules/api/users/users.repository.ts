@@ -1,10 +1,9 @@
 import { dbPool } from '../../../db/pool';
-import type { User, Email } from '../users/users.schema';
+import type { User } from '../users/users.types';
 import { getFirstRow } from '../../../db/helpers';
 import ms from 'ms';
 
-import type { Invitation } from '../auth/auth.schema';
-
+import type { Invitation } from './users.types';
 
 const userSelect = ({password = false}: {password?: boolean}) => {
   return `
@@ -21,7 +20,7 @@ const userSelect = ({password = false}: {password?: boolean}) => {
 type UserQueryOptions = { includePassword?: boolean };
 const userQueryOptionsDefault = { includePassword: false };
 
-export const findUserByEmail = async (email: Email, options: UserQueryOptions = userQueryOptionsDefault): Promise<User> => {
+export const findUserByEmail = async (email: string, options: UserQueryOptions = userQueryOptionsDefault): Promise<User> => {
     const result = await dbPool.query(`SELECT ${userSelect({password: options.includePassword})} FROM users WHERE user_email = $1 LIMIT 1`, [email]);
     return getFirstRow(result);
 };
@@ -32,36 +31,73 @@ export const findUserById = async (id: User['userId'], options: UserQueryOptions
 };
 
 export const createInvitation = async (
-  email: Email,
+  email: string,
   tokenHash: string,
   invitedByUserId: number,
 ): Promise<boolean> => {
   const expiresInMs = ms('3d');
   const expiresAt = new Date(Date.now() + expiresInMs);
 
-  const result = await dbPool.query(
-    `INSERT INTO "invites" (
-      "invite_email",
-      "invite_token_hash",
-      "invite_invited_by",
-      "invite_expires_at",
-      "invite_fulfilled_at"
-    )
-    SELECT
-      $1,
-      $2,
-      $3,
-      $4,
-      NULL
-    WHERE NOT EXISTS (
-      SELECT 1
-      FROM "users"
-      WHERE "user_email" = $1
-    )`,
-    [email, tokenHash, invitedByUserId, expiresAt],
-  );
+  const client = await dbPool.connect();
+  try {
+      await client.query('BEGIN');
 
-  return result.rowCount === 1;
+      const existingUserResult = await client.query(
+        `
+          SELECT 1
+          FROM "users"
+          WHERE "user_email" = $1
+          LIMIT 1
+        `,
+      [email],
+    );
+
+    if (existingUserResult.rowCount === 1) {
+      await client.query('ROLLBACK');
+      return false;
+    }
+
+      await client.query(
+        `
+          UPDATE "invites"
+          SET "invite_expires_at" = NOW()
+          WHERE "invite_email" = $1
+            AND "invite_fulfilled_at" IS NULL
+            AND "invite_expires_at" > NOW()
+        `,
+        [email],
+      );
+
+      const result = await client.query(
+        `
+          INSERT INTO "invites" (
+            "invite_email",
+            "invite_token_hash",
+            "invite_invited_by",
+            "invite_expires_at",
+            "invite_fulfilled_at"
+          )
+          VALUES (
+            $1,
+            $2,
+            $3,
+            $4,
+            NULL
+          )
+        `,
+        [email, tokenHash, invitedByUserId, expiresAt],
+      );
+
+      await client.query('COMMIT');
+
+      return result.rowCount === 1;
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    } finally {
+      client.release();
+    }
+
 };
 
 export const findInvitationByHashedToken = async (
@@ -124,7 +160,6 @@ export const createUser = async (
     RETURNING
       user_id AS "userId",
       user_email AS "email",
-      user_password_hash AS "passwordHash",
       user_role AS "role",
       user_nickname AS "nickname",
       user_created_at AS "createdAt",

@@ -1,6 +1,6 @@
 import type { TypedRequest } from '../../../shared/types';
 import type { Response } from 'express';
-import type { CreateGatewayRequestDto } from './gateways.schema';
+import type { CreateGatewayRequestDto } from './gateways.dto';
 
 import { InternalServerError } from '../../../shared/errors';
 

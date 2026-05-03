@@ -2,7 +2,7 @@ import type { Response } from 'express';
 import { generateAndCreateInvitation } from './users.service';
 
 import { getRequiredSession } from '../auth/auth.helpers';
-import { InviteUserRequestDto } from './users.schema';
+import { InviteUserRequestDto } from './users.dto';
 
 import type { TypedRequest } from '../../../shared/types';
 

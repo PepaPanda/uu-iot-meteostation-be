@@ -20,7 +20,7 @@ authRouter.post('/logout', authenticate,  (req, res) => {
 
 authRouter.get('/me', authenticate, getAuthenticatedUserInformationController);
 
-authRouter.post('/register-from-invite/:token', validateBody(registerFromInviteUserSchema), requireNoActiveSession, registerFromInviteController);
+authRouter.post('/register-from-invite/', validateBody(registerFromInviteUserSchema), requireNoActiveSession, registerFromInviteController);
 
 
 export default authRouter;

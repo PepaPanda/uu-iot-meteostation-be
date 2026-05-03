@@ -2,7 +2,7 @@ import type { Request, Response, NextFunction } from 'express';
 import { getRequiredSession } from '../modules/api/auth/auth.helpers';
 import { findUserById as findUserByIdService } from '../modules/api/users/users.service';
 import { ForbiddenError, InternalServerError } from '../shared/errors';
-import type { User } from '../modules/api/users/users.schema';
+import type { User } from '../modules/api/users/users.types';
 import { hasRequiredRole } from '../shared/helpers/authorization';
 
 export default (requiredUserRole: User['userRole']) => {
