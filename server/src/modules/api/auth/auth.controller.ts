@@ -8,8 +8,7 @@ import { attachSessionCookie, getRequiredSession, clearSessionCookie } from './a
 
 import type { LoginUserRequestDto } from './auth.dto';
 import { toLoginResponseDto, toCurrentUserInfoResponseDto } from './auth.dto';
-import type { RegisterUserRequestDto } from '../users/users.dto';
-
+import type { RegisterUserRequestDto } from './auth.dto';
 import { NotFoundError, UnauthorizedError, InternalServerError } from '../../../shared/errors';
 
 import { TypedRequest } from '../../../shared/types';
@@ -19,9 +18,8 @@ export const login = async (req: TypedRequest<LoginUserRequestDto>, res: Respons
     const { email, password } = req.body;
 
     const user = await findUserByEmail(email, {includePassword: true});
-    if(!user.userPasswordHash) throw new InternalServerError();
-
     if(!user) throw new NotFoundError('User not found');
+    if(!user.userPasswordHash) throw new InternalServerError();
 
     let passwordIsValid: boolean;
     try {
