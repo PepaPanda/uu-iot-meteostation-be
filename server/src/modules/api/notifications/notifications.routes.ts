@@ -2,17 +2,34 @@ import express from 'express';
 
 const notificationsRouter = express.Router();
 
-notificationsRouter.get('/', (req, res) => {
-    res.send('Returns notifications visible to current user, including acknowledgement state.');
-});
+import authenticate from '../../../middleware/authenticate';
+import { validateBody } from '../../../middleware/validateBody';
+import { validateParams } from '../../../middleware/validateParams';
+import requireUserRole from '../../../middleware/requireUserRole';
 
-notificationsRouter.post('/', (req, res) => {
-    res.json({responsibility: 'Creates manual notification, mainly for admins', bodyPosted: req.body});
-});
+import { listNotificationsController, createNotificationController, acknowledgeNotificationController } from './notifications.controller';
+import { listNotificationsSchema, createNotificationSchema, notificationIdParamsSchema } from './notifications.schema';
 
-notificationsRouter.post('/:notificationId/acknowledge', (req, res) => {
-    res.json({responsibility: 'acknowledge a single notification by id', idPosted: req.params.notificationId});
-});
+notificationsRouter.get(
+  '/',
+  authenticate,
+  validateBody(listNotificationsSchema),
+  listNotificationsController,
+);
 
+notificationsRouter.post(
+  '/',
+  authenticate,
+  requireUserRole('administrator'),
+  validateBody(createNotificationSchema),
+  createNotificationController,
+);
+
+notificationsRouter.post(
+  '/:notificationId/acknowledge',
+  authenticate,
+  validateParams(notificationIdParamsSchema),
+  acknowledgeNotificationController,
+);
 
 export default notificationsRouter;

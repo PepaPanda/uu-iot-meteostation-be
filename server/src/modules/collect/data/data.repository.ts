@@ -1,26 +1,40 @@
 import { dbPool } from '../../../db/pool';
 import type { CollectTelemetryDto } from './data.schema';
+import type { Telemetry } from '../../api/telemetry/telemetry.types';
 
 export const createTelemetry = async (
   telemetry: CollectTelemetryDto,
   gatewayId: number,
-): Promise<void> => {
-  await dbPool.query(
+): Promise<Telemetry> => {
+  const result = await dbPool.query<Telemetry>(
     `
-      INSERT INTO telemetries (
-        telemetry_remote_id,
-        telemetry_gateway_id,
-        telemetry_measured_at_utc,
-        telemetry_received_at_utc,
-        telemetry_temperature,
-        telemetry_pressure,
-        telemetry_humidity,
-        telemetry_lighting,
-        telemetry_raindrops_amount,
-        telemetry_node_battery_level,
-        telemetry_node_wifi_strength
+      INSERT INTO "telemetries" (
+        "telemetry_remote_id",
+        "telemetry_gateway_id",
+        "telemetry_measured_at_utc",
+        "telemetry_received_at_utc",
+        "telemetry_temperature",
+        "telemetry_pressure",
+        "telemetry_humidity",
+        "telemetry_lighting",
+        "telemetry_raindrops_amount",
+        "telemetry_node_battery_level",
+        "telemetry_node_wifi_strength"
       )
       VALUES ($1, $2, $3, NOW(), $4, $5, $6, $7, $8, $9, $10)
+      RETURNING
+        "telemetry_id" AS "id",
+        "telemetry_remote_id" AS "remoteId",
+        "telemetry_gateway_id" AS "gatewayId",
+        "telemetry_measured_at_utc" AS "measuredAtUtc",
+        "telemetry_received_at_utc" AS "receivedAtUtc",
+        "telemetry_temperature" AS "temperature",
+        "telemetry_pressure" AS "pressure",
+        "telemetry_humidity" AS "humidity",
+        "telemetry_lighting" AS "lighting",
+        "telemetry_raindrops_amount" AS "raindropsAmount",
+        "telemetry_node_battery_level" AS "nodeBatteryLevel",
+        "telemetry_node_wifi_strength" AS "nodeWifiStrength"
     `,
     [
       telemetry.remoteId,
@@ -35,6 +49,6 @@ export const createTelemetry = async (
       telemetry.nodeWifiStrength ?? null,
     ],
   );
-  
-  return;
+
+  return result.rows[0];
 };

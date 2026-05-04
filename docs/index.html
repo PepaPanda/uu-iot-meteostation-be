@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Meteostation Docs</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <style>
+      :root {
+        font-family:
+          Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+          "Segoe UI", sans-serif;
+        color: #172033;
+        background: #f6f8fb;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        display: grid;
+        place-items: center;
+      }
+
+      main {
+        width: min(920px, calc(100% - 32px));
+        padding: 48px;
+        background: #ffffff;
+        border-radius: 24px;
+        box-shadow: 0 24px 80px rgba(15, 23, 42, 0.08);
+      }
+
+      h1 {
+        margin: 0 0 12px;
+        font-size: clamp(2rem, 4vw, 3.5rem);
+        letter-spacing: -0.04em;
+      }
+
+      p {
+        margin: 0;
+        color: #5b6475;
+        font-size: 1.05rem;
+        line-height: 1.6;
+      }
+
+      .cards {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+        gap: 20px;
+        margin-top: 36px;
+      }
+
+      a.card {
+        display: block;
+        padding: 24px;
+        border: 1px solid #e5e9f0;
+        border-radius: 18px;
+        color: inherit;
+        text-decoration: none;
+        background: #fbfcfe;
+        transition:
+          transform 160ms ease,
+          box-shadow 160ms ease,
+          border-color 160ms ease;
+      }
+
+      a.card:hover {
+        transform: translateY(-2px);
+        border-color: #b8c2d6;
+        box-shadow: 0 12px 32px rgba(15, 23, 42, 0.08);
+      }
+
+      .card h2 {
+        margin: 0 0 8px;
+        font-size: 1.2rem;
+      }
+
+      .card p {
+        font-size: 0.95rem;
+      }
+
+      code {
+        padding: 2px 6px;
+        border-radius: 6px;
+        background: #eef2f7;
+      }
+
+      footer {
+        margin-top: 32px;
+        color: #7a8496;
+        font-size: 0.9rem;
+      }
+    </style>
+  </head>
+
+  <body>
+    <main>
+      <h1>Meteostation Docs</h1>
+      <p>
+        API documentation for the Meteostation backend. Choose the interactive
+        OpenAPI reference, the Markdown guide, or the raw OpenAPI specification.
+      </p>
+
+      <section class="cards">
+        <a class="card" href="./redoc.html">
+          <h2>API Reference</h2>
+          <p>Browse the OpenAPI documentation rendered with ReDoc.</p>
+        </a>
+
+        <a class="card" href="./API.md">
+          <h2>Markdown Docs</h2>
+          <p>Read the human-friendly API guide for frontend developers.</p>
+        </a>
+
+        <a class="card" href="./openapi.yaml">
+          <h2>OpenAPI YAML</h2>
+          <p>Download or inspect the raw <code>openapi.yaml</code> file.</p>
+        </a>
+      </section>
+
+      <footer>
+        Meteostation API · Express + TypeScript + Zod
+      </footer>
+    </main>
+  </body>
+</html>

@@ -1,6 +1,6 @@
 import express from 'express';
 import { validateBody } from '../../../middleware/validateBody';
-import { collectTelemetrySchema } from '../../../shared/zodSchemas';
+import { collectTelemetrySchema } from './data.schema';
 import authenticateGateway from '../../../middleware/authenticateGateway';
 import { collectTelemetry as collectTelemetryController } from './data.controller';
 

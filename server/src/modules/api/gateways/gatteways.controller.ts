@@ -1,15 +1,15 @@
 import type { TypedRequest, Empty } from '../../../shared/types';
 import type { Response } from 'express';
-import { type CreateGatewayRequestDto, type ListGatewaysRequestDto, type UpdateGatewayRequestDto, type GatewayIdRequestParamsDto, toGetGatewayResponseDto, toListGatewaysResponseDto, toRotateGatewaySecretResponseDto } from './gateways.dto';
+import { type CreateGatewayRequestDto, type ListGatewaysRequestDto, type UpdateGatewayRequestDto, type GatewayIdRequestParamsDto, toGetGatewayResponseDto, toListGatewaysResponseDto, toRotateGatewaySecretResponseDto, toGetGatewayHealthResponseDto } from './gateways.dto';
 
 import { InternalServerError, NotFoundError } from '../../../shared/errors';
 
-import { createGateway as createGatewayService, getGatewayById as getGatewayByIdService, listMatchingGatewaysWithPagination, updateGatewayByIdService, deleteGatewayByIdService, rotateGatewaySecretService } from './gateways.service';
+import { createGateway as createGatewayService, getGatewayById as getGatewayByIdService, listMatchingGatewaysWithPagination, updateGatewayByIdService, deleteGatewayByIdService, rotateGatewaySecretService, getGatewayHealthService } from './gateways.service';
 
 export const createGateway = async (req: TypedRequest<CreateGatewayRequestDto>, res: Response) => {
     const gw = await createGatewayService(req.body);
     if(!gw) throw new InternalServerError();
-    res.json({gateway: gw.gateway, secret: gw.gatewayToken});
+    res.status(201).json({gateway: gw.gateway, secret: gw.gatewayToken});
 };
 
 export const listGateways = async (req: TypedRequest<ListGatewaysRequestDto>, res: Response) => {
@@ -33,7 +33,7 @@ export const updateGateway = async (req: TypedRequest<UpdateGatewayRequestDto, G
 export const deleteGateway = async (req: TypedRequest<Empty, GatewayIdRequestParamsDto>, res: Response) => {
     const deletedGw = await deleteGatewayByIdService(parseInt(req.params.gatewayId));
     if (!deletedGw) throw new NotFoundError('Gateway not found');
-    res.json(toGetGatewayResponseDto(deletedGw));
+    res.status(204).send();
 };
 
 export const rotateGatewaySecret = async (req: TypedRequest<Empty, GatewayIdRequestParamsDto>, res: Response) => {
@@ -41,4 +41,10 @@ export const rotateGatewaySecret = async (req: TypedRequest<Empty, GatewayIdRequ
     const newSecret = await rotateGatewaySecretService(gatewayId);
     if (!newSecret) throw new NotFoundError('Gateway not found');
     res.json(toRotateGatewaySecretResponseDto(newSecret, gatewayId));
+};
+
+export const getGatewayHealthController = async (req: TypedRequest<unknown, GatewayIdRequestParamsDto>, res: Response) => {
+    const gatewayHealth = await getGatewayHealthService(parseInt(req.params.gatewayId));
+    if (!gatewayHealth) throw new NotFoundError('Gateway not found');
+    res.json(toGetGatewayHealthResponseDto(gatewayHealth));
 };

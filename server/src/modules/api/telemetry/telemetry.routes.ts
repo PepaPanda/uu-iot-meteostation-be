@@ -1,27 +1,29 @@
 import express from 'express';
 
+import authenticate from '../../../middleware/authenticate';
+import requireUserRole from '../../../middleware/requireUserRole';
+import { validateBody } from '../../../middleware/validateBody';
+import { validateParams } from '../../../middleware/validateParams';
+import { getTelemetryHistorySchema, getTrendsSchema } from './telemetry.schema';
+import { gatewayIdParamsSchema } from '../gateways/gateways.schema';
+
+import { getLatestTelemetryController, getTelemetryHistoryController, getTrendsController, getPredictionController, streamTelemetryController } from './telemetry.controller';
+
 const telemetryRouter = express.Router();
 
-telemetryRouter.get('history/:gatewayId', (req, res) => {
-    res.json({responsibility: 'get telemetry history of a given gateway', gatewayId: req.params.gatewayId, query: `from: ${req.query.from}, to: ${req.query.to}`});
-});
+// Returns latest telemetry for one gateway.
+telemetryRouter.get('/current/:gatewayId', authenticate, requireUserRole('guest'), validateParams(gatewayIdParamsSchema), getLatestTelemetryController);
 
-telemetryRouter.get('current/:gatewayId', (req, res) => {
-    res.json({responsibility: 'Returns latest telemetry for one gateway', gatewayId: req.params.gatewayId, query: `from: ${req.query.from}, to: ${req.query.to}`});
-});
+// Returns historical telemetry for charts and tables.
+telemetryRouter.get('/history/:gatewayId', authenticate, requireUserRole('guest'), validateParams(gatewayIdParamsSchema), validateBody(getTelemetryHistorySchema), getTelemetryHistoryController);
 
-telemetryRouter.get('stream/:gatewayId', (req, res) => {
-    res.json({responsibility: 'Server-Sent Events stream for automatic FE updates with newly received telemetry.', gatewayId: req.params.gatewayId, query: `from: ${req.query.from}, to: ${req.query.to}`});
-});
+//Pro teď IGNORUJ SSE endpoint (Server-Sent Events stream for automatic FE updates with newly received telemetry.)
+telemetryRouter.get('/stream/:gatewayId', authenticate, requireUserRole('guest'), validateParams(gatewayIdParamsSchema), streamTelemetryController);
 
-telemetryRouter.get('trends/:gatewayId', (req, res) => {
-    res.json({responsibility: 'Returns bucketed telemetry aggregates for charts and simple trend visualization.'});
-});
+// Returns bucketed telemetry aggregates for charts and simple trend visualization.
+telemetryRouter.get('/trends/:gatewayId', authenticate, requireUserRole('guest'), validateParams(gatewayIdParamsSchema), validateBody(getTrendsSchema), getTrendsController);
 
-telemetryRouter.get('prediction/:gatewayId', (req, res) => {
-    res.json({responsibility: 'Returns lightweight derived prediction/trend based on recent telemetry window.'});
-});
-
-
+// Returns lightweight derived prediction/trend based on recent telemetry window.
+telemetryRouter.get('/prediction/:gatewayId', authenticate, requireUserRole('guest'), validateParams(gatewayIdParamsSchema), getPredictionController);
 
 export default telemetryRouter;

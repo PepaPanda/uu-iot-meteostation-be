@@ -3,8 +3,7 @@ import express from 'express';
 import { login as loginController,  registerFromInvite as registerFromInviteController, getAuthenticatedUserInformation as getAuthenticatedUserInformationController, logout as logoutController, logoutEverywhere as logoutEverywhereController } from './auth.controller';
 
 import { validateBody } from '../../../middleware/validateBody';
-import { loginUserSchema } from '../../../shared/zodSchemas';
-
+import { loginUserSchema } from './auth.schema';
 import authenticate from '../../../middleware/authenticate';
 import requireNoActiveSession from '../../../middleware/requireNoActiveSession';
 
@@ -20,7 +19,7 @@ authRouter.post('/logout-everywhere', authenticate, logoutEverywhereController);
 
 authRouter.get('/me', authenticate, getAuthenticatedUserInformationController);
 
-authRouter.post('/register-from-invite/', validateBody(registerFromInviteUserSchema), requireNoActiveSession, registerFromInviteController);
+authRouter.post('/register-from-invite', validateBody(registerFromInviteUserSchema), requireNoActiveSession, registerFromInviteController);
 
 
 
