@@ -55,3 +55,19 @@ export type RotateGatewaySecretResponseDto = { secret: string, gatewayId: number
 export const toRotateGatewaySecretResponseDto = (secret: string, gatewayId: number): RotateGatewaySecretResponseDto => {
     return { secret, gatewayId };
 };
+
+export type GatewayHealthStatus = 'online' | 'offline' | 'unknown';
+
+export type GetGatewayHealthResponseDto = {
+    gatewayId: number;
+    status: GatewayHealthStatus;
+    lastTelemetryAtUtc: string | null;
+    nodeBatteryLevel: number | null;
+    nodeWifiStrength: number | null;
+};
+
+export const toGetGatewayHealthResponseDto = (
+    gatewayHealth: GetGatewayHealthResponseDto,
+): GetGatewayHealthResponseDto => {
+    return gatewayHealth;
+};

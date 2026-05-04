@@ -5,12 +5,13 @@ import {
   findGateways,
   updateGateway,
   deleteGateway,
-  rotateGatewaySecret
+  rotateGatewaySecret,
+  getLatestGatewayHealthTelemetry
 } from './gateways.repository';
 import type { Gateway } from './gateways.types';
-import { hashGatewayToken, generateNewGatewayToken } from './gateways.helpers';
+import { hashGatewayToken, generateNewGatewayToken, resolveGatewayHealthStatus } from './gateways.helpers';
 
-import { UpdateGatewayRequestDto } from './gateways.dto';
+import { UpdateGatewayRequestDto, GetGatewayHealthResponseDto } from './gateways.dto';
 
 import type { CreateGatewayRequestDto } from './gateways.dto';
 
@@ -111,4 +112,26 @@ export const rotateGatewaySecretService = async (
   if (!updatedGatewayId) return null;
 
   return token;
+};
+
+export const getGatewayHealthService = async (
+    gatewayId: number,
+): Promise<GetGatewayHealthResponseDto | null> => {
+    const gateway = await findGatewayById(gatewayId);
+
+    if (!gateway) {
+        return null;
+    }
+
+    const healthTelemetry = await getLatestGatewayHealthTelemetry(gatewayId);
+
+    return {
+        gatewayId,
+        status: resolveGatewayHealthStatus(healthTelemetry?.lastTelemetryAtUtc ?? null),
+        lastTelemetryAtUtc: healthTelemetry
+            ? String(healthTelemetry.lastTelemetryAtUtc)
+            : null,
+        nodeBatteryLevel: healthTelemetry?.nodeBatteryLevel ?? null,
+        nodeWifiStrength: healthTelemetry?.nodeWifiStrength ?? null,
+    };
 };

@@ -1,1 +1,17 @@
-theme: minima
+title: Meteostation Docs
+description: API documentation for the Meteostation backend.
+theme: jekyll-theme-cayman
+
+markdown: kramdown
+kramdown:
+  input: GFM
+
+plugins:
+  - jekyll-relative-links
+
+relative_links:
+  enabled: true
+  collections: true
+
+include:
+  - openapi.yaml

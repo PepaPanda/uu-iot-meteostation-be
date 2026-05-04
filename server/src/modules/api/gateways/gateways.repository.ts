@@ -252,3 +252,31 @@ export const rotateGatewaySecret = async (
 
   return getFirstRow(result)?.gatewayId ?? null;
 };
+
+export type GatewayHealthTelemetry = {
+    gatewayId: number;
+    lastTelemetryAtUtc: Date;
+    nodeBatteryLevel: number | null;
+    nodeWifiStrength: number | null;
+};
+
+export const getLatestGatewayHealthTelemetry = async (
+    gatewayId: number,
+): Promise<GatewayHealthTelemetry | null> => {
+    const result = await dbPool.query<GatewayHealthTelemetry>(
+        `
+            SELECT
+                "telemetry_gateway_id" AS "gatewayId",
+                "telemetry_received_at_utc" AS "lastTelemetryAtUtc",
+                "telemetry_node_battery_level" AS "nodeBatteryLevel",
+                "telemetry_node_wifi_strength" AS "nodeWifiStrength"
+            FROM "telemetries"
+            WHERE "telemetry_gateway_id" = $1
+            ORDER BY "telemetry_received_at_utc" DESC
+            LIMIT 1
+        `,
+        [gatewayId],
+    );
+
+    return getFirstRow(result);
+};

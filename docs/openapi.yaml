@@ -1,0 +1,2203 @@
+openapi: 3.0.3
+info:
+  title: Meteostation API
+  version: 1.0.0
+  description: API documentation for the Meteostation Express + TypeScript + Zod backend. The frontend API is mounted under
+    `/api`; the gateway collection API is mounted under `/collect`.
+servers:
+- url: /
+  description: Current host
+tags:
+- name: Auth
+- name: Gateways
+- name: Notifications
+- name: Telemetry
+- name: Users
+- name: Collect
+components:
+  securitySchemes:
+    MeteoSessionCookie:
+      type: apiKey
+      in: cookie
+      name: meteoSessionToken
+      description: Server-managed session cookie. The client does not manually manage the cookie. The backend validates it
+        and may internally rotate it approximately every 15 minutes.
+    GatewayBearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: gateway-secret
+      description: Bearer token containing the gateway secret. The secret is visible only once when created or rotated.
+  responses:
+    BadRequest:
+      description: Bad Request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            appError:
+              summary: Application error
+              value:
+                error: ForbiddenError
+                message: Forbidden
+                details: {}
+            validation:
+              summary: Validation error
+              value:
+                error: UnprocessableEntityError
+                message: Validation failed
+                details:
+                - field: email
+                  message: Invalid email
+    Unauthorized:
+      description: Unauthorized
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            appError:
+              summary: Application error
+              value:
+                error: ForbiddenError
+                message: Forbidden
+                details: {}
+            validation:
+              summary: Validation error
+              value:
+                error: UnprocessableEntityError
+                message: Validation failed
+                details:
+                - field: email
+                  message: Invalid email
+    Forbidden:
+      description: Forbidden
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            appError:
+              summary: Application error
+              value:
+                error: ForbiddenError
+                message: Forbidden
+                details: {}
+            validation:
+              summary: Validation error
+              value:
+                error: UnprocessableEntityError
+                message: Validation failed
+                details:
+                - field: email
+                  message: Invalid email
+    NotFound:
+      description: Not Found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            appError:
+              summary: Application error
+              value:
+                error: ForbiddenError
+                message: Forbidden
+                details: {}
+            validation:
+              summary: Validation error
+              value:
+                error: UnprocessableEntityError
+                message: Validation failed
+                details:
+                - field: email
+                  message: Invalid email
+    Conflict:
+      description: Conflict
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            appError:
+              summary: Application error
+              value:
+                error: ForbiddenError
+                message: Forbidden
+                details: {}
+            validation:
+              summary: Validation error
+              value:
+                error: UnprocessableEntityError
+                message: Validation failed
+                details:
+                - field: email
+                  message: Invalid email
+    UnprocessableEntity:
+      description: Unprocessable Entity
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            appError:
+              summary: Application error
+              value:
+                error: ForbiddenError
+                message: Forbidden
+                details: {}
+            validation:
+              summary: Validation error
+              value:
+                error: UnprocessableEntityError
+                message: Validation failed
+                details:
+                - field: email
+                  message: Invalid email
+    InternalServerError:
+      description: Internal Server Error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            appError:
+              summary: Application error
+              value:
+                error: ForbiddenError
+                message: Forbidden
+                details: {}
+            validation:
+              summary: Validation error
+              value:
+                error: UnprocessableEntityError
+                message: Validation failed
+                details:
+                - field: email
+                  message: Invalid email
+  schemas:
+    Role:
+      type: string
+      enum:
+      - guest
+      - operator
+      - supervisor
+      - administrator
+      description: 'Roles are hierarchical: guest < operator < supervisor < administrator.'
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+          example: UnprocessableEntityError
+        message:
+          type: string
+          example: Validation failed
+        details:
+          nullable: true
+          description: Optional structured error details. Validation errors return an array of field-level entries.
+      required:
+      - message
+    ValidationErrorDetail:
+      type: object
+      properties:
+        field:
+          type: string
+          example: email
+        message:
+          type: string
+          example: Invalid email
+      required:
+      - field
+      - message
+    LoginUserRequest:
+      type: object
+      required:
+      - email
+      - password
+      properties:
+        email:
+          type: string
+          format: email
+          maxLength: 255
+          example: admin@example.com
+        password:
+          type: string
+          minLength: 8
+          maxLength: 128
+          format: password
+          example: correct horse battery staple
+    RegisterFromInviteUserRequest:
+      type: object
+      required:
+      - token
+      - password
+      - nickname
+      properties:
+        token:
+          type: string
+          minLength: 1
+          maxLength: 512
+          example: invite_plain_token
+        password:
+          type: string
+          minLength: 8
+          maxLength: 128
+          format: password
+          example: correct horse battery staple
+        nickname:
+          type: string
+          minLength: 1
+          maxLength: 255
+          example: Admin
+    RefreshTokenRequest:
+      type: object
+      required:
+      - refreshToken
+      properties:
+        refreshToken:
+          type: string
+          minLength: 1
+          maxLength: 512
+    LogoutUserRequest:
+      type: object
+      required:
+      - refreshToken
+      properties:
+        refreshToken:
+          type: string
+          minLength: 1
+          maxLength: 512
+    LoginResponseDto:
+      type: object
+      required:
+      - id
+      - email
+      - nickname
+      - role
+      properties:
+        id:
+          type: integer
+          example: 1
+        email:
+          type: string
+          format: email
+          example: admin@example.com
+        nickname:
+          type: string
+          example: Admin
+        role:
+          $ref: '#/components/schemas/Role'
+      example:
+        id: 1
+        email: admin@example.com
+        nickname: Admin
+        role: administrator
+    CurrentUserInfoResponseDto:
+      allOf:
+      - $ref: '#/components/schemas/LoginResponseDto'
+      - type: object
+        required:
+        - createdAt
+        - updatedAt
+        properties:
+          createdAt:
+            type: string
+            format: date-time
+            example: '2026-04-05T10:00:00Z'
+          updatedAt:
+            type: string
+            format: date-time
+            example: '2026-04-05T10:00:00Z'
+      example:
+        id: 1
+        email: admin@example.com
+        nickname: Admin
+        role: administrator
+        createdAt: '2026-04-05T10:00:00Z'
+        updatedAt: '2026-04-05T10:00:00Z'
+    ListGatewaysRequest:
+      type: object
+      properties:
+        page:
+          type: integer
+          minimum: 1
+          default: 1
+          example: 1
+        pageSize:
+          type: integer
+          minimum: 1
+          maximum: 100
+          default: 20
+          example: 20
+        search:
+          type: string
+          maxLength: 255
+          example: Garden
+    CreateGatewayRequest:
+      type: object
+      required:
+      - name
+      - description
+      - location
+      - latitude
+      - longitude
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 255
+          example: Garden Gateway
+        description:
+          type: string
+          minLength: 1
+          maxLength: 2000
+          example: Gateway near greenhouse
+        location:
+          type: string
+          minLength: 1
+          maxLength: 255
+          example: Garden
+        latitude:
+          type: number
+          minimum: -90
+          maximum: 90
+          example: 50.0755
+        longitude:
+          type: number
+          minimum: -180
+          maximum: 180
+          example: 14.4378
+    UpdateGatewayRequest:
+      type: object
+      minProperties: 1
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 255
+        description:
+          type: string
+          minLength: 1
+          maxLength: 2000
+        location:
+          type: string
+          minLength: 1
+          maxLength: 255
+        latitude:
+          type: number
+          minimum: -90
+          maximum: 90
+        longitude:
+          type: number
+          minimum: -180
+          maximum: 180
+      description: At least one field must be provided.
+    GetGatewayResponseDto:
+      type: object
+      required:
+      - id
+      - name
+      - description
+      - location
+      - latitude
+      - longitude
+      properties:
+        id:
+          type: integer
+          example: 1
+        name:
+          type: string
+          example: Garden Gateway
+        description:
+          type: string
+          nullable: true
+          example: Gateway near greenhouse
+        location:
+          type: string
+          nullable: true
+          example: Garden
+        latitude:
+          type: number
+          nullable: true
+          example: 50.0755
+        longitude:
+          type: number
+          nullable: true
+          example: 14.4378
+      example:
+        id: 1
+        name: Garden Gateway
+        description: Gateway near greenhouse
+        location: Garden
+        latitude: 50.0755
+        longitude: 14.4378
+    Pagination:
+      type: object
+      required:
+      - page
+      - pageSize
+      - totalCount
+      - totalPages
+      properties:
+        page:
+          type: integer
+          example: 1
+        pageSize:
+          type: integer
+          example: 20
+        totalCount:
+          type: integer
+          example: 1
+        totalPages:
+          type: integer
+          example: 1
+    ListGatewaysResponseDto:
+      type: object
+      required:
+      - gateways
+      - pagination
+      properties:
+        gateways:
+          type: array
+          items:
+            $ref: '#/components/schemas/GetGatewayResponseDto'
+        pagination:
+          $ref: '#/components/schemas/Pagination'
+      example:
+        gateways:
+        - id: 1
+          name: Garden Gateway
+          description: Gateway near greenhouse
+          location: Garden
+          latitude: 50.0755
+          longitude: 14.4378
+        pagination:
+          page: 1
+          pageSize: 20
+          totalCount: 1
+          totalPages: 1
+    RotateGatewaySecretResponseDto:
+      type: object
+      required:
+      - secret
+      - gatewayId
+      properties:
+        secret:
+          type: string
+          example: gw_secret_visible_once
+        gatewayId:
+          type: integer
+          example: 1
+    GatewayHealthStatus:
+      type: string
+      enum:
+      - online
+      - offline
+      - unknown
+    GetGatewayHealthResponseDto:
+      type: object
+      required:
+      - gatewayId
+      - status
+      - lastTelemetryAtUtc
+      - nodeBatteryLevel
+      - nodeWifiStrength
+      properties:
+        gatewayId:
+          type: integer
+          example: 1
+        status:
+          $ref: '#/components/schemas/GatewayHealthStatus'
+        lastTelemetryAtUtc:
+          type: string
+          format: date-time
+          nullable: true
+          example: '2026-04-05T10:15:02Z'
+        nodeBatteryLevel:
+          type: integer
+          nullable: true
+          example: 87
+        nodeWifiStrength:
+          type: integer
+          nullable: true
+          example: -62
+      example:
+        gatewayId: 1
+        status: online
+        lastTelemetryAtUtc: '2026-04-05T10:15:02Z'
+        nodeBatteryLevel: 87
+        nodeWifiStrength: -62
+    CreateGatewayResponseDto:
+      type: object
+      required:
+      - gateway
+      - secret
+      properties:
+        gateway:
+          $ref: '#/components/schemas/GetGatewayResponseDto'
+        secret:
+          type: string
+          description: Gateway secret visible once.
+          example: gw_secret_visible_once
+      example:
+        gateway:
+          id: 1
+          name: Garden Gateway
+          description: Gateway near greenhouse
+          location: Garden
+          latitude: 50.0755
+          longitude: 14.4378
+        secret: gw_secret_visible_once
+    ListNotificationsRequest:
+      type: object
+      properties:
+        onlyUnacknowledged:
+          type: boolean
+          example: true
+    NotificationType:
+      type: string
+      enum:
+      - warning
+      - info
+      - danger
+    CreateNotificationRequest:
+      type: object
+      required:
+      - type
+      - text
+      - gatewayId
+      - isForAdminsOnly
+      properties:
+        type:
+          $ref: '#/components/schemas/NotificationType'
+        text:
+          type: string
+          minLength: 1
+          maxLength: 5000
+          example: Gateway 1 is offline.
+        gatewayId:
+          type: integer
+          nullable: true
+          minimum: 1
+          example: 1
+        isForAdminsOnly:
+          type: boolean
+          example: false
+      example:
+        type: warning
+        text: Gateway 1 is offline.
+        gatewayId: 1
+        isForAdminsOnly: false
+    NotificationResponseDto:
+      type: object
+      required:
+      - id
+      - text
+      - type
+      - gatewayId
+      - isForAdminsOnly
+      - acknowledged
+      properties:
+        id:
+          type: integer
+          example: 1
+        text:
+          type: string
+          example: Gateway 1 is offline.
+        type:
+          $ref: '#/components/schemas/NotificationType'
+        gatewayId:
+          type: integer
+          nullable: true
+          example: 1
+        isForAdminsOnly:
+          type: boolean
+          example: false
+        acknowledged:
+          type: boolean
+          example: false
+      example:
+        id: 1
+        text: Gateway 1 is offline.
+        type: warning
+        gatewayId: 1
+        isForAdminsOnly: false
+        acknowledged: false
+    ListNotificationsResponseDto:
+      type: object
+      required:
+      - notifications
+      properties:
+        notifications:
+          type: array
+          items:
+            $ref: '#/components/schemas/NotificationResponseDto'
+      example:
+        notifications:
+        - id: 1
+          text: Gateway 1 is offline.
+          type: warning
+          gatewayId: 1
+          isForAdminsOnly: false
+          acknowledged: false
+    CreateNotificationResponseDto:
+      type: object
+      required:
+      - id
+      - text
+      - type
+      - gatewayId
+      - isForAdminsOnly
+      properties:
+        id:
+          type: integer
+          example: 1
+        text:
+          type: string
+          example: Gateway 1 is offline.
+        type:
+          $ref: '#/components/schemas/NotificationType'
+        gatewayId:
+          type: integer
+          nullable: true
+          example: 1
+        isForAdminsOnly:
+          type: boolean
+          example: false
+      example:
+        id: 1
+        text: Gateway 1 is offline.
+        type: warning
+        gatewayId: 1
+        isForAdminsOnly: false
+    AcknowledgeNotificationResponseDto:
+      type: object
+      required:
+      - id
+      - acknowledged
+      properties:
+        id:
+          type: integer
+          example: 1
+        acknowledged:
+          type: boolean
+          example: true
+      example:
+        id: 1
+        acknowledged: true
+    GetTelemetryHistoryRequest:
+      type: object
+      required:
+      - from
+      - to
+      properties:
+        from:
+          type: string
+          format: date-time
+          example: '2026-04-05T00:00:00Z'
+        to:
+          type: string
+          format: date-time
+          example: '2026-04-06T00:00:00Z'
+        limit:
+          type: integer
+          minimum: 1
+          maximum: 5000
+          default: 500
+          example: 500
+      description: '`from` must be before `to`.'
+    GetTrendsRequest:
+      type: object
+      required:
+      - from
+      - to
+      - bucket
+      properties:
+        from:
+          type: string
+          format: date-time
+          example: '2026-04-05T00:00:00Z'
+        to:
+          type: string
+          format: date-time
+          example: '2026-04-06T00:00:00Z'
+        bucket:
+          type: string
+          enum:
+          - 15m
+          - 30m
+          - 1h
+          - 6h
+          - 1d
+          example: 1h
+      description: '`from` must be before `to`.'
+    GetLatestTelemetryResponseDto:
+      type: object
+      required:
+      - id
+      - remoteId
+      - gatewayId
+      - measuredAtUtc
+      - receivedAtUtc
+      - temperature
+      - pressure
+      - humidity
+      - lighting
+      - raindropsAmount
+      properties:
+        id:
+          type: integer
+          example: 1
+        remoteId:
+          type: integer
+          example: 42
+        gatewayId:
+          type: integer
+          example: 1
+        measuredAtUtc:
+          type: string
+          format: date-time
+          example: '2026-04-05T10:15:00Z'
+        receivedAtUtc:
+          type: string
+          format: date-time
+          example: '2026-04-05T10:15:02Z'
+        temperature:
+          type: number
+          example: 22.4
+        pressure:
+          type: number
+          example: 1012.8
+        humidity:
+          type: number
+          example: 54
+        lighting:
+          type: number
+          example: 820
+        raindropsAmount:
+          type: number
+          example: 0
+      example:
+        id: 1
+        remoteId: 42
+        gatewayId: 1
+        measuredAtUtc: '2026-04-05T10:15:00Z'
+        receivedAtUtc: '2026-04-05T10:15:02Z'
+        temperature: 22.4
+        pressure: 1012.8
+        humidity: 54
+        lighting: 820
+        raindropsAmount: 0
+    GetTelemetryHistoryResponseDto:
+      type: object
+      required:
+      - telemetries
+      properties:
+        telemetries:
+          type: array
+          items:
+            $ref: '#/components/schemas/GetLatestTelemetryResponseDto'
+      example:
+        telemetries:
+        - id: 1
+          remoteId: 42
+          gatewayId: 1
+          measuredAtUtc: '2026-04-05T10:15:00Z'
+          receivedAtUtc: '2026-04-05T10:15:02Z'
+          temperature: 22.4
+          pressure: 1012.8
+          humidity: 54
+          lighting: 820
+          raindropsAmount: 0
+    Bucket:
+      type: object
+      required:
+      - bucketStartUtc
+      - avgTemperature
+      - avgPressure
+      - avgHumidity
+      - avgLighting
+      - sumRaindropsAmount
+      properties:
+        bucketStartUtc:
+          type: string
+          format: date-time
+          example: '2026-04-05T10:00:00Z'
+        avgTemperature:
+          type: number
+          example: 22.1
+        avgPressure:
+          type: number
+          example: 1012.6
+        avgHumidity:
+          type: number
+          example: 55.2
+        avgLighting:
+          type: number
+          example: 810
+        sumRaindropsAmount:
+          type: number
+          example: 0
+    GetTelemetryTrendsResponseDto:
+      type: object
+      required:
+      - buckets
+      properties:
+        buckets:
+          type: array
+          items:
+            $ref: '#/components/schemas/Bucket'
+      example:
+        buckets:
+        - bucketStartUtc: '2026-04-05T10:00:00Z'
+          avgTemperature: 22.1
+          avgPressure: 1012.6
+          avgHumidity: 55.2
+          avgLighting: 810
+          sumRaindropsAmount: 0
+    Trend:
+      type: string
+      enum:
+      - rising
+      - falling
+      - stable
+    SimplePredictionResponseDto:
+      type: object
+      required:
+      - generatedAtUtc
+      - temperatureTrend
+      - pressureTrend
+      - humidityTrend
+      - summary
+      properties:
+        generatedAtUtc:
+          type: string
+          format: date-time
+          example: '2026-04-05T10:15:00Z'
+        temperatureTrend:
+          $ref: '#/components/schemas/Trend'
+        pressureTrend:
+          $ref: '#/components/schemas/Trend'
+        humidityTrend:
+          $ref: '#/components/schemas/Trend'
+        summary:
+          type: string
+          example: Pressure is falling and humidity is rising, rain may become more likely in the next few hours.
+      example:
+        generatedAtUtc: '2026-04-05T10:15:00Z'
+        temperatureTrend: stable
+        pressureTrend: falling
+        humidityTrend: rising
+        summary: Pressure is falling and humidity is rising, rain may become more likely in the next few hours.
+    SseConnectedEvent:
+      type: object
+      required:
+      - gatewayId
+      - connectedAtUtc
+      properties:
+        gatewayId:
+          type: integer
+          example: 1
+        connectedAtUtc:
+          type: string
+          format: date-time
+          example: '2026-04-05T10:15:00.000Z'
+    SseHeartbeatEvent:
+      type: object
+      required:
+      - timestamp
+      properties:
+        timestamp:
+          type: string
+          format: date-time
+          example: '2026-04-05T10:15:30.000Z'
+    ListUsersRequest:
+      type: object
+      properties:
+        page:
+          type: integer
+          minimum: 1
+          default: 1
+          example: 1
+        pageSize:
+          type: integer
+          minimum: 1
+          maximum: 100
+          default: 20
+          example: 20
+        role:
+          $ref: '#/components/schemas/Role'
+        search:
+          type: string
+          maxLength: 255
+          example: Admin
+    UpdateUserRoleRequest:
+      type: object
+      required:
+      - role
+      properties:
+        role:
+          $ref: '#/components/schemas/Role'
+    InviteUserRequest:
+      type: object
+      required:
+      - email
+      properties:
+        email:
+          type: string
+          format: email
+          example: new.user@example.com
+    UpdateUserRequest:
+      type: object
+      required:
+      - email
+      - nickname
+      properties:
+        email:
+          type: string
+          format: email
+          example: admin@example.com
+        nickname:
+          type: string
+          minLength: 2
+          maxLength: 64
+          example: Admin
+    ChangeUserPasswordRequest:
+      type: object
+      required:
+      - password
+      properties:
+        password:
+          type: string
+          minLength: 8
+          maxLength: 128
+          format: password
+          example: correct horse battery staple
+    InviteUserResponseDto:
+      type: object
+      required:
+      - invitationPlainToken
+      properties:
+        invitationPlainToken:
+          type: string
+          example: invite_plain_token_visible_once
+    GetUserResponseDto:
+      type: object
+      required:
+      - id
+      - email
+      - role
+      - nickname
+      - createdAt
+      - registeredAt
+      - updatedAt
+      properties:
+        id:
+          type: integer
+          example: 1
+        email:
+          type: string
+          format: email
+          example: admin@example.com
+        role:
+          $ref: '#/components/schemas/Role'
+        nickname:
+          type: string
+          example: Admin
+        createdAt:
+          type: string
+          format: date-time
+          example: '2026-04-05T10:00:00Z'
+        registeredAt:
+          type: string
+          format: date-time
+          example: '2026-04-05T10:00:00Z'
+        updatedAt:
+          type: string
+          format: date-time
+          example: '2026-04-05T10:00:00Z'
+      example:
+        id: 1
+        email: admin@example.com
+        nickname: Admin
+        role: administrator
+        createdAt: '2026-04-05T10:00:00Z'
+        updatedAt: '2026-04-05T10:00:00Z'
+        registeredAt: '2026-04-05T10:00:00Z'
+    ListUsersResponseDto:
+      type: object
+      required:
+      - users
+      - pagination
+      properties:
+        users:
+          type: array
+          items:
+            $ref: '#/components/schemas/GetUserResponseDto'
+        pagination:
+          $ref: '#/components/schemas/Pagination'
+      example:
+        users:
+        - id: 1
+          email: admin@example.com
+          nickname: Admin
+          role: administrator
+          createdAt: '2026-04-05T10:00:00Z'
+          updatedAt: '2026-04-05T10:00:00Z'
+          registeredAt: '2026-04-05T10:00:00Z'
+        pagination:
+          page: 1
+          pageSize: 20
+          totalCount: 1
+          totalPages: 1
+    UpdateUserRoleResponseDto:
+      type: object
+      required:
+      - id
+      - role
+      - updatedAt
+      properties:
+        id:
+          type: integer
+          example: 1
+        role:
+          $ref: '#/components/schemas/Role'
+        updatedAt:
+          type: string
+          format: date-time
+          example: '2026-04-05T10:00:00Z'
+    UpdateUserResponseDto:
+      allOf:
+      - $ref: '#/components/schemas/GetUserResponseDto'
+    CollectTelemetryRequest:
+      type: object
+      required:
+      - remoteId
+      - measuredAtUtc
+      - temperature
+      - pressure
+      - humidity
+      - lighting
+      - raindropsAmount
+      properties:
+        remoteId:
+          type: string
+          pattern: ^\d+$
+          description: Remote ID must contain only digits.
+          example: '42'
+        measuredAtUtc:
+          type: string
+          format: date-time
+          example: '2026-04-05T10:15:00Z'
+        temperature:
+          type: number
+          format: double
+          example: 22.4
+        pressure:
+          type: number
+          format: double
+          example: 1012.8
+        humidity:
+          type: number
+          minimum: 0
+          maximum: 100
+          example: 54
+        lighting:
+          type: number
+          minimum: 0
+          example: 820
+        raindropsAmount:
+          type: integer
+          minimum: 0
+          example: 0
+        nodeBatteryLevel:
+          type: integer
+          minimum: 0
+          maximum: 100
+          example: 87
+        nodeWifiStrength:
+          type: integer
+          example: -62
+      example:
+        remoteId: '42'
+        measuredAtUtc: '2026-04-05T10:15:00Z'
+        temperature: 22.4
+        pressure: 1012.8
+        humidity: 54
+        lighting: 820
+        raindropsAmount: 0
+        nodeBatteryLevel: 87
+        nodeWifiStrength: -62
+paths:
+  /api/auth/login:
+    post:
+      tags:
+      - Auth
+      summary: Log in
+      description: Creates a server-managed session. Requires no active session.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginUserRequest'
+            example:
+              email: admin@example.com
+              password: correct horse battery staple
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponseDto'
+              example:
+                id: 1
+                email: admin@example.com
+                nickname: Admin
+                role: administrator
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /api/auth/logout:
+    post:
+      tags:
+      - Auth
+      summary: Log out current session
+      description: Protected by cookie authentication.
+      security:
+      - MeteoSessionCookie: []
+      responses:
+        '204':
+          description: Logged out
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /api/auth/logout-everywhere:
+    post:
+      tags:
+      - Auth
+      summary: Log out all sessions
+      description: Protected by cookie authentication. Invalidates all active sessions for the authenticated user.
+      security:
+      - MeteoSessionCookie: []
+      responses:
+        '204':
+          description: Logged out everywhere
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /api/auth/me:
+    get:
+      tags:
+      - Auth
+      summary: Get current user
+      description: Protected by cookie authentication.
+      security:
+      - MeteoSessionCookie: []
+      responses:
+        '200':
+          description: Current user information
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CurrentUserInfoResponseDto'
+              example:
+                id: 1
+                email: admin@example.com
+                nickname: Admin
+                role: administrator
+                createdAt: '2026-04-05T10:00:00Z'
+                updatedAt: '2026-04-05T10:00:00Z'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /api/auth/register-from-invite:
+    post:
+      tags:
+      - Auth
+      summary: Register from invitation
+      description: Registers a user using an invitation token, then creates a server-managed session. Requires no active session.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterFromInviteUserRequest'
+            example:
+              token: invite_plain_token
+              password: correct horse battery staple
+              nickname: Admin
+      responses:
+        '201':
+          description: Registered and logged in
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponseDto'
+              example:
+                id: 1
+                email: admin@example.com
+                nickname: Admin
+                role: administrator
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /api/gateways/{gatewayId}/rotate-secret:
+    post:
+      tags:
+      - Gateways
+      summary: Rotate gateway secret
+      description: 'Protected by cookie authentication. Required role: supervisor or higher. Returns the new gateway secret
+        once.'
+      security:
+      - MeteoSessionCookie: []
+      parameters:
+      - name: gatewayId
+        in: path
+        required: true
+        description: Gateway numeric identifier.
+        schema:
+          type: string
+          pattern: ^\d+$
+        example: '1'
+      responses:
+        '200':
+          description: Gateway secret rotated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RotateGatewaySecretResponseDto'
+              example:
+                secret: gw_secret_visible_once
+                gatewayId: 1
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /api/gateways/{gatewayId}/health:
+    get:
+      tags:
+      - Gateways
+      summary: Get gateway health
+      description: 'Protected by cookie authentication. Required role: guest or higher.'
+      security:
+      - MeteoSessionCookie: []
+      parameters:
+      - name: gatewayId
+        in: path
+        required: true
+        description: Gateway numeric identifier.
+        schema:
+          type: string
+          pattern: ^\d+$
+        example: '1'
+      responses:
+        '200':
+          description: Gateway health
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetGatewayHealthResponseDto'
+              example:
+                gatewayId: 1
+                status: online
+                lastTelemetryAtUtc: '2026-04-05T10:15:02Z'
+                nodeBatteryLevel: 87
+                nodeWifiStrength: -62
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /api/gateways:
+    get:
+      tags:
+      - Gateways
+      summary: List gateways
+      description: 'Protected by cookie authentication. Required role: guest or higher. This GET endpoint intentionally uses
+        a JSON request body validated by Zod.'
+      security:
+      - MeteoSessionCookie: []
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ListGatewaysRequest'
+            example:
+              page: 1
+              pageSize: 20
+              search: Garden
+        description: Optional filters and pagination. GET request body is intentional.
+      responses:
+        '200':
+          description: Gateway list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListGatewaysResponseDto'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    post:
+      tags:
+      - Gateways
+      summary: Create gateway
+      description: 'Protected by cookie authentication. Required role: operator or higher. The returned secret is visible
+        only once.'
+      security:
+      - MeteoSessionCookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateGatewayRequest'
+            example:
+              name: Garden Gateway
+              description: Gateway near greenhouse
+              location: Garden
+              latitude: 50.0755
+              longitude: 14.4378
+      responses:
+        '201':
+          description: Gateway created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateGatewayResponseDto'
+              example:
+                gateway:
+                  id: 1
+                  name: Garden Gateway
+                  description: Gateway near greenhouse
+                  location: Garden
+                  latitude: 50.0755
+                  longitude: 14.4378
+                secret: gw_secret_visible_once
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /api/gateways/{gatewayId}:
+    get:
+      tags:
+      - Gateways
+      summary: Get gateway
+      description: 'Protected by cookie authentication. Required role: guest or higher.'
+      security:
+      - MeteoSessionCookie: []
+      parameters:
+      - name: gatewayId
+        in: path
+        required: true
+        description: Gateway numeric identifier.
+        schema:
+          type: string
+          pattern: ^\d+$
+        example: '1'
+      responses:
+        '200':
+          description: Gateway details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetGatewayResponseDto'
+              example:
+                id: 1
+                name: Garden Gateway
+                description: Gateway near greenhouse
+                location: Garden
+                latitude: 50.0755
+                longitude: 14.4378
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    patch:
+      tags:
+      - Gateways
+      summary: Update gateway
+      description: 'Protected by cookie authentication. Required role: operator or higher. At least one field must be provided.'
+      security:
+      - MeteoSessionCookie: []
+      parameters:
+      - name: gatewayId
+        in: path
+        required: true
+        description: Gateway numeric identifier.
+        schema:
+          type: string
+          pattern: ^\d+$
+        example: '1'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateGatewayRequest'
+            example:
+              location: Greenhouse
+      responses:
+        '200':
+          description: Gateway updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetGatewayResponseDto'
+              example:
+                id: 1
+                name: Garden Gateway
+                description: Gateway near greenhouse
+                location: Greenhouse
+                latitude: 50.0755
+                longitude: 14.4378
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    delete:
+      tags:
+      - Gateways
+      summary: Delete gateway
+      description: 'Protected by cookie authentication. Required role: supervisor or higher.'
+      security:
+      - MeteoSessionCookie: []
+      parameters:
+      - name: gatewayId
+        in: path
+        required: true
+        description: Gateway numeric identifier.
+        schema:
+          type: string
+          pattern: ^\d+$
+        example: '1'
+      responses:
+        '204':
+          description: Gateway deleted
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /api/notifications:
+    get:
+      tags:
+      - Notifications
+      summary: List notifications
+      description: Protected by cookie authentication. This GET endpoint intentionally uses a JSON request body validated
+        by Zod.
+      security:
+      - MeteoSessionCookie: []
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ListNotificationsRequest'
+            example:
+              onlyUnacknowledged: true
+        description: Optional filter. GET request body is intentional.
+      responses:
+        '200':
+          description: Notification list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListNotificationsResponseDto'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    post:
+      tags:
+      - Notifications
+      summary: Create notification
+      description: 'Protected by cookie authentication. Required role: administrator.'
+      security:
+      - MeteoSessionCookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateNotificationRequest'
+            example:
+              type: warning
+              text: Gateway 1 is offline.
+              gatewayId: 1
+              isForAdminsOnly: false
+      responses:
+        '201':
+          description: Notification created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateNotificationResponseDto'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /api/notifications/{notificationId}/acknowledge:
+    post:
+      tags:
+      - Notifications
+      summary: Acknowledge notification
+      description: Protected by cookie authentication.
+      security:
+      - MeteoSessionCookie: []
+      parameters:
+      - name: notificationId
+        in: path
+        required: true
+        description: Notification numeric identifier.
+        schema:
+          type: string
+          pattern: ^\d+$
+        example: '1'
+      responses:
+        '200':
+          description: Notification acknowledged
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AcknowledgeNotificationResponseDto'
+              example:
+                id: 1
+                acknowledged: true
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /api/telemetry/current/{gatewayId}:
+    get:
+      tags:
+      - Telemetry
+      summary: Get latest telemetry
+      description: 'Protected by cookie authentication. Required role: guest or higher.'
+      security:
+      - MeteoSessionCookie: []
+      parameters:
+      - name: gatewayId
+        in: path
+        required: true
+        description: Gateway numeric identifier.
+        schema:
+          type: string
+          pattern: ^\d+$
+        example: '1'
+      responses:
+        '200':
+          description: Latest telemetry
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetLatestTelemetryResponseDto'
+              example:
+                id: 1
+                remoteId: 42
+                gatewayId: 1
+                measuredAtUtc: '2026-04-05T10:15:00Z'
+                receivedAtUtc: '2026-04-05T10:15:02Z'
+                temperature: 22.4
+                pressure: 1012.8
+                humidity: 54
+                lighting: 820
+                raindropsAmount: 0
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /api/telemetry/history/{gatewayId}:
+    get:
+      tags:
+      - Telemetry
+      summary: Get telemetry history
+      description: 'Protected by cookie authentication. Required role: guest or higher. This GET endpoint intentionally uses
+        a JSON request body validated by Zod.'
+      security:
+      - MeteoSessionCookie: []
+      parameters:
+      - name: gatewayId
+        in: path
+        required: true
+        description: Gateway numeric identifier.
+        schema:
+          type: string
+          pattern: ^\d+$
+        example: '1'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GetTelemetryHistoryRequest'
+            example:
+              from: '2026-04-05T00:00:00Z'
+              to: '2026-04-06T00:00:00Z'
+              limit: 500
+        description: Time range and optional limit. GET request body is intentional.
+      responses:
+        '200':
+          description: Telemetry history
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetTelemetryHistoryResponseDto'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /api/telemetry/stream/{gatewayId}:
+    get:
+      tags:
+      - Telemetry
+      summary: Stream telemetry events
+      description: 'Protected by cookie authentication. Required role: guest or higher. Returns a Server-Sent Events stream
+        with `connected`, `telemetry`, and `heartbeat` events.'
+      security:
+      - MeteoSessionCookie: []
+      parameters:
+      - name: gatewayId
+        in: path
+        required: true
+        description: Gateway numeric identifier.
+        schema:
+          type: string
+          pattern: ^\d+$
+        example: '1'
+      responses:
+        '200':
+          description: SSE stream
+          content:
+            text/event-stream:
+              schema:
+                type: string
+                description: 'Server-Sent Events stream. Events: connected, telemetry, heartbeat.'
+              examples:
+                connected:
+                  summary: connected event
+                  value: 'event: connected\ndata: {"gatewayId":1,"connectedAtUtc":"2026-04-05T10:15:00.000Z"}\n\n'
+                telemetry:
+                  summary: telemetry event
+                  value: 'event: telemetry\ndata: {"id":1,"remoteId":42,"gatewayId":1,"measuredAtUtc":"2026-04-05T10:15:00Z","receivedAtUtc":"2026-04-05T10:15:02Z","temperature":22.4,"pressure":1012.8,"humidity":54,"lighting":820,"raindropsAmount":0}\n\n'
+                heartbeat:
+                  summary: heartbeat event
+                  value: 'event: heartbeat\ndata: {"timestamp":"2026-04-05T10:15:30.000Z"}\n\n'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /api/telemetry/trends/{gatewayId}:
+    get:
+      tags:
+      - Telemetry
+      summary: Get telemetry trends
+      description: 'Protected by cookie authentication. Required role: guest or higher. This GET endpoint intentionally uses
+        a JSON request body validated by Zod.'
+      security:
+      - MeteoSessionCookie: []
+      parameters:
+      - name: gatewayId
+        in: path
+        required: true
+        description: Gateway numeric identifier.
+        schema:
+          type: string
+          pattern: ^\d+$
+        example: '1'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GetTrendsRequest'
+            example:
+              from: '2026-04-05T00:00:00Z'
+              to: '2026-04-06T00:00:00Z'
+              bucket: 1h
+        description: Time range and bucket size. GET request body is intentional.
+      responses:
+        '200':
+          description: Telemetry trends
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetTelemetryTrendsResponseDto'
+              example:
+                buckets:
+                - bucketStartUtc: '2026-04-05T10:00:00Z'
+                  avgTemperature: 22.1
+                  avgPressure: 1012.6
+                  avgHumidity: 55.2
+                  avgLighting: 810
+                  sumRaindropsAmount: 0
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /api/telemetry/prediction/{gatewayId}:
+    get:
+      tags:
+      - Telemetry
+      summary: Get simple weather prediction
+      description: 'Protected by cookie authentication. Required role: guest or higher.'
+      security:
+      - MeteoSessionCookie: []
+      parameters:
+      - name: gatewayId
+        in: path
+        required: true
+        description: Gateway numeric identifier.
+        schema:
+          type: string
+          pattern: ^\d+$
+        example: '1'
+      responses:
+        '200':
+          description: Simple prediction
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SimplePredictionResponseDto'
+              example:
+                generatedAtUtc: '2026-04-05T10:15:00Z'
+                temperatureTrend: stable
+                pressureTrend: falling
+                humidityTrend: rising
+                summary: Pressure is falling and humidity is rising, rain may become more likely in the next few hours.
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /api/users/update:
+    patch:
+      tags:
+      - Users
+      summary: Update current user
+      description: Protected by cookie authentication.
+      security:
+      - MeteoSessionCookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateUserRequest'
+            example:
+              email: admin@example.com
+              nickname: Admin
+      responses:
+        '200':
+          description: User updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UpdateUserResponseDto'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /api/users/change-password:
+    patch:
+      tags:
+      - Users
+      summary: Change current user password
+      description: Protected by cookie authentication.
+      security:
+      - MeteoSessionCookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChangeUserPasswordRequest'
+            example:
+              password: correct horse battery staple
+      responses:
+        '204':
+          description: Password changed
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /api/users/{userId}:
+    delete:
+      tags:
+      - Users
+      summary: Delete user
+      description: 'Protected by cookie authentication. Required role: administrator.'
+      security:
+      - MeteoSessionCookie: []
+      parameters:
+      - name: userId
+        in: path
+        required: true
+        description: User numeric identifier.
+        schema:
+          type: string
+          pattern: ^\d+$
+        example: '1'
+      responses:
+        '204':
+          description: User deleted
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    get:
+      tags:
+      - Users
+      summary: Get user
+      description: 'Protected by cookie authentication. Required role: operator or higher.'
+      security:
+      - MeteoSessionCookie: []
+      parameters:
+      - name: userId
+        in: path
+        required: true
+        description: User numeric identifier.
+        schema:
+          type: string
+          pattern: ^\d+$
+        example: '1'
+      responses:
+        '200':
+          description: User details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetUserResponseDto'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /api/users/invite:
+    post:
+      tags:
+      - Users
+      summary: Invite user
+      description: 'Protected by cookie authentication. Required role: administrator. The invitation token is returned once.'
+      security:
+      - MeteoSessionCookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InviteUserRequest'
+            example:
+              email: new.user@example.com
+      responses:
+        '200':
+          description: Invitation created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InviteUserResponseDto'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /api/users:
+    get:
+      tags:
+      - Users
+      summary: List users
+      description: 'Protected by cookie authentication. Required role: supervisor or higher. This GET endpoint intentionally
+        uses a JSON request body validated by Zod.'
+      security:
+      - MeteoSessionCookie: []
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ListUsersRequest'
+            example:
+              page: 1
+              pageSize: 20
+              role: administrator
+              search: Admin
+        description: Optional filters and pagination. GET request body is intentional.
+      responses:
+        '200':
+          description: User list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListUsersResponseDto'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /api/users/{userId}/role:
+    patch:
+      tags:
+      - Users
+      summary: Update user role
+      description: 'Protected by cookie authentication. Required role: administrator.'
+      security:
+      - MeteoSessionCookie: []
+      parameters:
+      - name: userId
+        in: path
+        required: true
+        description: User numeric identifier.
+        schema:
+          type: string
+          pattern: ^\d+$
+        example: '1'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateUserRoleRequest'
+            example:
+              role: operator
+      responses:
+        '200':
+          description: User role updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UpdateUserRoleResponseDto'
+              example:
+                id: 1
+                role: operator
+                updatedAt: '2026-04-05T10:00:00Z'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /collect/data/send:
+    post:
+      tags:
+      - Collect
+      summary: Collect telemetry from gateway
+      description: 'Gateway ingestion endpoint. Authenticates with `Authorization: Bearer <gateway-secret>`. The gateway secret
+        is created with a gateway or by rotating the secret and is visible only once.'
+      security:
+      - GatewayBearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CollectTelemetryRequest'
+            example:
+              remoteId: '42'
+              measuredAtUtc: '2026-04-05T10:15:00Z'
+              temperature: 22.4
+              pressure: 1012.8
+              humidity: 54
+              lighting: 820
+              raindropsAmount: 0
+              nodeBatteryLevel: 87
+              nodeWifiStrength: -62
+      responses:
+        '201':
+          description: Telemetry accepted. No response body.
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+        '500':
+          $ref: '#/components/responses/InternalServerError'

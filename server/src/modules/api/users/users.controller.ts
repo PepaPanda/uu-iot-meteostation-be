@@ -38,7 +38,7 @@ export const changeCurrentUserPasswordController = async (
 
   if (!updatedUser) throw new NotFoundError('User not found');
 
-  res.status(204).send();
+  res.status(200).send();
 };
 
 export const deleteUserController = async (
@@ -49,7 +49,7 @@ export const deleteUserController = async (
 
   if (!deletedUser) throw new NotFoundError('User not found');
 
-  res.json(toGetUserResponseDto(deletedUser));
+  res.status(204).send();
 };
 
 export const listUsersController = async (
