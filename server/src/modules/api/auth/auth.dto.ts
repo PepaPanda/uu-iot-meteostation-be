@@ -2,6 +2,7 @@ import z from 'zod/v3';
 
 import type { User } from '../users/users.types';
 import { loginUserSchema } from './auth.schema';
+import { registerFromInviteUserSchema } from '../users/users.schema';
 
 //Response DTos
 
@@ -39,4 +40,5 @@ export const  toCurrentUserInfoResponseDto = (user: User): CurrentUserInfoRespon
 
 
 //Request DTos
-export type LoginUserRequestDto = z.infer<typeof loginUserSchema>
+export type LoginUserRequestDto = z.infer<typeof loginUserSchema>;
+export type RegisterUserRequestDto = z.infer<typeof registerFromInviteUserSchema>;

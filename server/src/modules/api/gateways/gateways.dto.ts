@@ -7,9 +7,7 @@ import type { Gateway } from './gateways.types';
 
 //Body
 export type CreateGatewayRequestDto = z.infer<typeof createGatewaySchema>;
-
 export type UpdateGatewayRequestDto = z.infer<typeof updateGatewaySchema>;
-
 export type ListGatewaysRequestDto = z.infer<typeof listGatewaysSchema>;
 
 //Params
