@@ -46,7 +46,7 @@ export const toListGatewaysResponseDto = (
   gateways: Gateway[],
   pagination: ListGatewaysResponseDto['pagination'],
 ): ListGatewaysResponseDto => ({
-  gateways: gateways.map(toGetGatewayResponseDto),
+  gateways: gateways.map(gw => toGetGatewayResponseDto(gw)),
   pagination,
 });
 

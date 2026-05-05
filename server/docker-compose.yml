@@ -1,16 +1,15 @@
 services:
   postgres:
-    image: postgres:16
+    image: timescale/timescaledb:latest-pg16
     container_name: meteostation-postgres
-    restart: unless-stopped
     environment:
-      POSTGRES_DB: meteostation
       POSTGRES_USER: meteostation_user
       POSTGRES_PASSWORD: meteostation_password
+      POSTGRES_DB: meteostation
     ports:
       - "5432:5432"
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - meteostation-postgres-data:/var/lib/postgresql/data
 
   adminer:
     image: adminer
@@ -20,4 +19,4 @@ services:
       - "8080:8080"
 
 volumes:
-  postgres_data:
+  meteostation-postgres-data:

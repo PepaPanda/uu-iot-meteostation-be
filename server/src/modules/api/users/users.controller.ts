@@ -6,6 +6,8 @@ import { Empty } from '../../../shared/types';
 import type { TypedRequest } from '../../../shared/types';
 import { InternalServerError, NotFoundError } from '../../../shared/errors';
 
+import { clearSessionCookie } from '../auth/auth.helpers';
+
 export const inviteController = async (req: TypedRequest<InviteUserRequestDto>, res: Response) => {
     const { email } = req.body;
     const session = getRequiredSession(req);
@@ -21,8 +23,8 @@ export const updateCurrentUserController = async (
   req: TypedRequest<UpdateUserRequestDto>,
   res: Response,
 ) => {
-  if(!req.user) throw new InternalServerError('user needs to be authenticated');
-  const updatedUser = await updateCurrentUserService(req.user.userId, req.body);
+  if(!req.session) throw new InternalServerError('user needs to be authenticated');
+  const updatedUser = await updateCurrentUserService(req.session.userId, req.body);
 
   if (!updatedUser) throw new NotFoundError('User not found');
 
@@ -33,8 +35,8 @@ export const changeCurrentUserPasswordController = async (
   req: TypedRequest<ChangeUserPasswordRequestDto>,
   res: Response,
 ) => {
-  if(!req.user) throw new InternalServerError('user needs to be authenticated');
-  const updatedUser = await changeCurrentUserPasswordService(req.user.userId, req.body);
+  if(!req.session) throw new InternalServerError('user needs to be authenticated');
+  const updatedUser = await changeCurrentUserPasswordService(req.session.userId, req.body);
 
   if (!updatedUser) throw new NotFoundError('User not found');
 
@@ -45,9 +47,12 @@ export const deleteUserController = async (
   req: TypedRequest<Empty, UserIdRequestParamsDto>,
   res: Response,
 ) => {
-  const deletedUser = await deleteUserByIdService(parseInt(req.params.userId));
+  if(!req.session) throw new InternalServerError();
 
+  const deletedUser = await deleteUserByIdService(parseInt(req.params.userId));
   if (!deletedUser) throw new NotFoundError('User not found');
+
+  if(deletedUser.userId === req.session.userId) clearSessionCookie(res);
 
   res.status(204).send();
 };
@@ -78,7 +83,7 @@ export const updateUserRoleController = async (
 ) => {
   const updatedUser = await updateUserRoleByIdService(parseInt(req.params.userId), req.body);
 
-  if (!updatedUser) throw new NotFoundError('User not found');
+  if (!updatedUser) throw new NotFoundError('User was either not found or could not be updated');
 
   res.json(toUpdateUserRoleResponseDto(updatedUser));
 };

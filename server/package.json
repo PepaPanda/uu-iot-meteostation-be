@@ -13,9 +13,11 @@
     "db:up": "docker compose up -d",
     "db:down": "docker compose down",
     "db:init": "docker exec -i meteostation-postgres psql -U meteostation_user -d meteostation < database/migrations/001_init.sql",
-    "db:seed": "docker exec -i meteostation-postgres psql -U meteostation_user -d meteostation < database/seeds/test-user.seed.sql",
+    "db:seed": "docker exec -i meteostation-postgres psql -U meteostation_user -d meteostation < database/seeds/test.seed.sql",
     "db:drop": "docker exec -i meteostation-postgres psql -U meteostation_user -d meteostation < database/drop.sql",
-    "db:create-test-user": "tsx ./src/db/test/createTestUser.ts"
+    "db:create-test-user": "tsx ./src/db/test/createTestUser.ts",
+    "db:wait": "docker exec meteostation-postgres pg_isready -U meteostation_user -d meteostation",
+    "db:reset": "npm run db:up && npm run db:wait && npm run db:drop && npm run db:init && npm run db:seed && npm run db:create-test-user"
   },
   "dependencies": {
     "argon2": "^0.44.0",
@@ -44,6 +46,7 @@
     "globals": "^17.4.0",
     "jiti": "^2.6.1",
     "ts-node-dev": "^2.0.0",
+    "tsx": "^4.21.0",
     "typescript": "^6.0.2",
     "typescript-eslint": "^8.58.0"
   }

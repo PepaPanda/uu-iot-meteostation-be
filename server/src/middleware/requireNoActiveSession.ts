@@ -6,8 +6,6 @@ import { verifySessionToken } from '../modules/api/auth/auth.service';
 
 export default async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     const sessionToken = req.cookies?.['meteoSessionToken'];
-    console.log('cookie below');
-    console.log(req.cookies);
     if (!(sessionToken && typeof sessionToken === 'string')) return next();
 
     const session = await verifySessionToken(sessionToken);

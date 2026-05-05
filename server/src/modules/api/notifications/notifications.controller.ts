@@ -25,8 +25,8 @@ export const listNotificationsController = async (
   req: TypedRequest<ListNotificationsRequestDto>,
   res: Response,
 ) => {
-  if(!req.user) throw new InternalServerError(); //Possibly used without auth
-  const notifications = await listNotificationsService(req.user.userId, req.body);
+  if(!req.session) throw new InternalServerError(); //Possibly used without auth
+  const notifications = await listNotificationsService(req.session.userId, req.body);
 
   res.json(toListNotificationsResponseDto(notifications));
 };
@@ -44,10 +44,10 @@ export const acknowledgeNotificationController = async (
   req: TypedRequest<unknown, NotificationIdRequestParamsDto>,
   res: Response,
 ) => {
-  if(!req.user) throw new InternalServerError(); //Possibly used without auth
+  if(!req.session) throw new InternalServerError(); //Possibly used without auth
   const notification = await acknowledgeNotificationService(
     parseInt(req.params.notificationId),
-    req.user.userId,
+    req.session.userId,
   );
 
   if (!notification) throw new NotFoundError('Notification not found');

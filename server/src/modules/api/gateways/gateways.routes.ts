@@ -17,7 +17,7 @@ gatewaysRouter.get('/', authenticate, requireUserRole('guest'), validateBody(lis
 
 gatewaysRouter.get('/:gatewayId', authenticate, requireUserRole('guest'), validateParams(gatewayIdParamsSchema), getGatewayController);
 
-gatewaysRouter.patch('/:gatewayId', authenticate, requireUserRole('operator'), validateParams(updateGatewaySchema), updateGatewayController);
+gatewaysRouter.patch('/:gatewayId', authenticate, requireUserRole('operator'), validateBody(updateGatewaySchema), validateParams(gatewayIdParamsSchema), updateGatewayController);
 
 gatewaysRouter.post('/', authenticate, requireUserRole('operator'), validateBody(createGatewaySchema), createGatewayController);
 
