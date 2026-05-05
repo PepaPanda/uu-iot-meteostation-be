@@ -10,7 +10,7 @@ const gatewayQueryOptionsDefault = { includeTokenHash: false };
 const gatewaySelect = (options: GatewayQueryOptions) => {
   return `
         gateway_id AS "gatewayId",
-        ${options.includeTokenHash === true && 'gateway_token_hash AS "gatewayTokenHash,'}
+        ${options.includeTokenHash === true ? 'gateway_token_hash AS "gatewayTokenHash",' : ''}
         gateway_description AS "gatewayDescription",
         gateway_name AS "gatewayName",
         gateway_location AS "gatewayLocation",
@@ -157,15 +157,14 @@ export const findGateways = async ({
   const gatewaysResult = await dbPool.query<Gateway>(
     `
       SELECT
-        "gateway_id"::int AS "id",
-        "gateway_name" AS "name",
-        "gateway_description" AS "description",
-        "gateway_location" AS "location",
-        "gateway_latitude" AS "latitude",
-        "gateway_longitude" AS "longitude",
+        "gateway_id"::int AS "gatewayId",
+        "gateway_name" AS "gatewayName",
+        "gateway_description" AS "gatewayDescription",
+        "gateway_location" AS "gatewayLocation",
+        "gateway_latitude" AS "gatewayLatitude",
+        "gateway_longitude" AS "gatewayLongitude"
       FROM "gateways"
       ${whereSql}
-      ORDER BY "gateway_created_at" DESC
       LIMIT ${limitPlaceholder}
       OFFSET ${offsetPlaceholder}
     `,

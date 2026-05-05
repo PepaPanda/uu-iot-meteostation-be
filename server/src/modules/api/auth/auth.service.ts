@@ -20,7 +20,6 @@ type VerifySessionToken = Promise<{
 export const verifySessionToken = async (plainToken: string): VerifySessionToken => {
   const hashedToken = hashSessionToken(plainToken);
   const session = await findUserSessionByHashedToken(hashedToken);
-  console.log(session);
 
   // Must keep the order!
   if(!session) return {status: 'not-found', session};

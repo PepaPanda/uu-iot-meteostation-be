@@ -33,17 +33,17 @@ export const listNotifications = async (
 ): Promise<Notification[]> => {
   const values: unknown[] = [input.userId];
 
+  console.log(values);
+
   const whereSql = [
     'un."user_id" = $1',
   ];
 
-  if (input.onlyUnacknowledged !== undefined) {
-    values.push(input.onlyUnacknowledged);
-    whereSql.push(`un."acknowledged" = $${values.length}`);
+  if (input.onlyUnacknowledged === true) {
+    whereSql.push('un."acknowledged" IS NOT TRUE');
   }
 
-  const result = await dbPool.query<Notification>(
-    `
+  const query = `
       SELECT
         ${notificationSelectSql}
       FROM "notifications" n
@@ -51,7 +51,10 @@ export const listNotifications = async (
         ON un."notification_id" = n."notification_id"
       WHERE ${whereSql.join(' AND ')}
       ORDER BY n."notification_id" DESC
-    `,
+    `;
+
+  const result = await dbPool.query<Notification>(
+    query,
     values,
   );
 

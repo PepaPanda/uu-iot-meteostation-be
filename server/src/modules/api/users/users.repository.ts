@@ -263,7 +263,7 @@ export const deleteUser = async (
       DELETE FROM "users"
       WHERE "user_id" = $1
       RETURNING
-        "user_id" AS "userId",
+        "user_id"::int AS "userId",
         "user_email" AS "userEmail",
         "user_role" AS "userRole",
         "user_nickname" AS "userNickname",
@@ -343,7 +343,7 @@ export const updateUserRole = async (
       UPDATE "users"
       SET "user_role" = $1,
           "user_updated_at" = NOW()
-      WHERE "user_id" = $2
+      WHERE "user_id" = $2 AND "user_role" != 'administrator'
       RETURNING
         "user_id" AS "userId",
         "user_role" AS "userRole",
