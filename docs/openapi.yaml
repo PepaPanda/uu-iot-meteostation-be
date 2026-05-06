@@ -1129,6 +1129,80 @@ components:
         raindropsAmount: 0
         nodeBatteryLevel: 87
         nodeWifiStrength: -62
+    CollectTelemetryHistoryRequest:
+      type: object
+      required:
+        - records
+      properties:
+        records:
+          type: array
+          items:
+            type: object
+            required:
+              - remoteId
+              - measuredAtUtc
+              - temperature
+              - pressure
+              - humidity
+              - lighting
+              - raindropsAmount
+            properties:
+              remoteId:
+                type: string
+                pattern: '^\d+$'
+                description: Remote ID must contain only digits.
+                example: '42'
+              measuredAtUtc:
+                type: string
+                format: date-time
+                example: '2026-04-05T10:15:00Z'
+              temperature:
+                type: number
+                format: double
+                example: 22.4
+              pressure:
+                type: number
+                format: double
+                example: 1012.8
+              humidity:
+                type: number
+                minimum: 0
+                maximum: 100
+                example: 54
+              lighting:
+                type: number
+                minimum: 0
+                example: 820
+              raindropsAmount:
+                type: integer
+                minimum: 0
+                example: 0
+              nodeBatteryLevel:
+                type: integer
+                minimum: 0
+                maximum: 100
+                example: 87
+              nodeWifiStrength:
+                type: integer
+                example: -62
+      example:
+        records:
+          - remoteId: '42'
+            measuredAtUtc: '2026-04-05T10:15:00Z'
+            temperature: 22.4
+            pressure: 1012.8
+            humidity: 54
+            lighting: 820
+            raindropsAmount: 0
+            nodeBatteryLevel: 87
+            nodeWifiStrength: -62
+          - remoteId: '42'
+            measuredAtUtc: '2026-04-05T10:20:00Z'
+            temperature: 22.5
+            pressure: 1012.7
+            humidity: 55
+            lighting: 815
+            raindropsAmount: 0
 paths:
   /api/auth/login:
     post:
@@ -2203,3 +2277,42 @@ paths:
           $ref: '#/components/responses/UnprocessableEntity'
         '500':
           $ref: '#/components/responses/InternalServerError'
+  /collect/data/send-history:
+    post:
+      tags:
+      - Collect
+      summary: Collect historical telemetry from gateway
+      description: 'Gateway ingestion endpoint for historical (not real time) data. Authenticates with `Authorization: Bearer <gateway-secret>`. The gateway secret
+        is created with a gateway or by rotating the secret and is visible only once. This enpoint does not trigger SSE to opened clients.'
+      security:
+      - GatewayBearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CollectTelemetryHistoryRequest'
+            example:
+              remoteId: '42'
+              measuredAtUtc: '2026-04-05T10:15:00Z'
+              temperature: 22.4
+              pressure: 1012.8
+              humidity: 54
+              lighting: 820
+              raindropsAmount: 0
+              nodeBatteryLevel: 87
+              nodeWifiStrength: -62
+      responses:
+        '201':
+          description: Telemetry accepted. No response body.
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+          
