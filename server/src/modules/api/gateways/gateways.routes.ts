@@ -13,7 +13,7 @@ gatewaysRouter.post('/:gatewayId/rotate-secret', authenticate, requireUserRole('
 
 gatewaysRouter.get('/:gatewayId/health', authenticate, requireUserRole('guest'), validateParams(gatewayIdParamsSchema), getGatewayHealthController);
 
-gatewaysRouter.get('/', authenticate, requireUserRole('guest'), validateBody(listGatewaysSchema), listGatewaysController);
+gatewaysRouter.post('/list', authenticate, requireUserRole('guest'), validateBody(listGatewaysSchema), listGatewaysController);
 
 gatewaysRouter.get('/:gatewayId', authenticate, requireUserRole('guest'), validateParams(gatewayIdParamsSchema), getGatewayController);
 
