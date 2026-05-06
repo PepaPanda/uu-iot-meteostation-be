@@ -135,17 +135,19 @@ Operational application errors return JSON in this shape:
 | Generic internal error | `{ "error": "Internal server error" }` |
 | Invalid JSON body | `{ "error": "BadRequestError", "message": "invalid JSON body" }` |
 
-## Note about GET request bodies
+## Note about POST for read/query endpoints with request bodies
 
-Some GET endpoints intentionally use request bodies through `validateBody(...)`. They are documented with `requestBody` in `openapi.yaml`, even though many APIs avoid bodies on GET requests.
+Some endpoints intentionally use `POST` even though they behave like read/query endpoints. This is a design choice because these endpoints accept query parameters through the request body and the body is validated with `validateBody(...)`.
 
-These endpoints use GET request bodies intentionally:
+They are documented with `requestBody` in `openapi.yaml`. We avoid request bodies on `GET` endpoints because many clients, tools, and browser APIs do not handle `GET` requests with bodies consistently.
 
-- `GET /api/gateways`
-- `GET /api/notifications`
-- `GET /api/telemetry/history/:gatewayId`
-- `GET /api/telemetry/trends/:gatewayId`
-- `GET /api/users`
+These endpoints use `POST` instead of `GET` intentionally:
+
+- `POST /api/gateways/list`
+- `POST /api/notifications/list`
+- `POST /api/telemetry/history/:gatewayId`
+- `POST /api/telemetry/trends/:gatewayId`
+- `POST /api/users/list`
 
 Frontend clients should send `Content-Type: application/json` when sending these bodies.
 
@@ -160,28 +162,28 @@ Frontend clients should send `Content-Type: application/json` when sending these
 | POST | /api/auth/register-from-invite | Auth | none | Register from invitation |
 | POST | /api/gateways/{gatewayId}/rotate-secret | Gateways | supervisor or higher | Rotate gateway secret |
 | GET | /api/gateways/{gatewayId}/health | Gateways | guest or higher | Get gateway health |
-| GET | /api/gateways | Gateways | guest or higher | List gateways |
+| POST | /api/gateways/list | Gateways | guest or higher | List gateways |
 | POST | /api/gateways | Gateways | operator or higher | Create gateway |
 | GET | /api/gateways/{gatewayId} | Gateways | guest or higher | Get gateway |
 | PATCH | /api/gateways/{gatewayId} | Gateways | operator or higher | Update gateway |
 | DELETE | /api/gateways/{gatewayId} | Gateways | supervisor or higher | Delete gateway |
-| GET | /api/notifications | Notifications | authenticated user | List notifications |
+| POST | /api/notifications/list | Notifications | authenticated user | List notifications |
 | POST | /api/notifications | Notifications | administrator | Create notification |
 | POST | /api/notifications/{notificationId}/acknowledge | Notifications | authenticated user | Acknowledge notification |
 | GET | /api/telemetry/current/{gatewayId} | Telemetry | guest or higher | Get latest telemetry |
-| GET | /api/telemetry/history/{gatewayId} | Telemetry | guest or higher | Get telemetry history |
+| POST | /api/telemetry/history/{gatewayId} | Telemetry | guest or higher | Get telemetry history |
 | GET | /api/telemetry/stream/{gatewayId} | Telemetry | guest or higher | Stream telemetry events |
-| GET | /api/telemetry/trends/{gatewayId} | Telemetry | guest or higher | Get telemetry trends |
+| POST | /api/telemetry/trends/{gatewayId} | Telemetry | guest or higher | Get telemetry trends |
 | GET | /api/telemetry/prediction/{gatewayId} | Telemetry | guest or higher | Get simple weather prediction |
 | PATCH | /api/users/update | Users | authenticated user | Update current user |
 | PATCH | /api/users/change-password | Users | authenticated user | Change current user password |
 | DELETE | /api/users/{userId} | Users | administrator | Delete user |
 | GET | /api/users/{userId} | Users | operator or higher | Get user |
 | POST | /api/users/invite | Users | administrator | Invite user |
-| GET | /api/users | Users | supervisor or higher | List users |
+| POST | /api/users/list | Users | supervisor or higher | List users |
 | PATCH | /api/users/{userId}/role | Users | administrator | Update user role |
-| POST | /collect/data/send | Collect | gateway secret | Collect telemetry from gateway |
-
+| POST | /collect/data/send | Collect | gateway secret | Collect current telemetry from gateway |
+| POST | /collect/data/send-history | Collect | gateway secret | Collect historical telemetry records from gateway |
 
 ## Auth module
 
@@ -282,7 +284,7 @@ Response: `201 LoginResponseDto`
 
 Base path: `/api/gateways`
 
-### `GET /api/gateways`
+### `POST /api/gateways/list`
 
 Lists gateways.
 
@@ -425,7 +427,7 @@ online | offline | unknown
 
 Base path: `/api/notifications`
 
-### `GET /api/notifications`
+### `POST /api/notifications/list`
 
 Lists notifications.
 
@@ -520,7 +522,7 @@ Response: `200 GetLatestTelemetryResponseDto`
 }
 ```
 
-### `GET /api/telemetry/history/:gatewayId`
+### `POST /api/telemetry/history/:gatewayId`
 
 Returns telemetry history for a gateway.
 
@@ -542,7 +544,7 @@ Validation rule: `from` must be before `to`.
 
 Response: `200 GetTelemetryHistoryResponseDto`
 
-### `GET /api/telemetry/trends/:gatewayId`
+### `POST /api/telemetry/trends/:gatewayId`
 
 Returns telemetry trend buckets for a gateway.
 
@@ -704,7 +706,7 @@ Request body:
 
 Response: `204 No Content`
 
-### `GET /api/users`
+### `POST /api/users/list`
 
 Lists users.
 

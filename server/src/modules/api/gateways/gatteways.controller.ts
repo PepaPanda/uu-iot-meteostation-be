@@ -1,6 +1,6 @@
 import type { TypedRequest, Empty } from '../../../shared/types';
 import type { Response } from 'express';
-import { type CreateGatewayRequestDto, type ListGatewaysRequestDto, type UpdateGatewayRequestDto, type GatewayIdRequestParamsDto, toGetGatewayResponseDto, toListGatewaysResponseDto, toRotateGatewaySecretResponseDto, toGetGatewayHealthResponseDto } from './gateways.dto';
+import { type CreateGatewayRequestDto, type ListGatewaysRequestDto, type UpdateGatewayRequestDto, type GatewayIdRequestParamsDto, toGetGatewayResponseDto, toListGatewaysResponseDto, toRotateGatewaySecretResponseDto, toGetGatewayHealthResponseDto, toCreateGatewayResponseDto } from './gateways.dto';
 
 import { InternalServerError, NotFoundError } from '../../../shared/errors';
 
@@ -9,7 +9,7 @@ import { createGateway as createGatewayService, getGatewayById as getGatewayById
 export const createGateway = async (req: TypedRequest<CreateGatewayRequestDto>, res: Response) => {
     const gw = await createGatewayService(req.body);
     if(!gw) throw new InternalServerError();
-    res.status(201).json({gateway: gw.gateway, secret: gw.gatewayToken});
+    res.status(201).json(toCreateGatewayResponseDto(gw.gateway, gw.gatewayToken));
 };
 
 export const listGateways = async (req: TypedRequest<ListGatewaysRequestDto>, res: Response) => {

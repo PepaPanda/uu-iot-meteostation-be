@@ -18,7 +18,7 @@ import {
 
 //API
 
-import { sendToServer } from "./api.js";
+import { sendHistoryToServer, sendToServer } from "./api.js";
 
 //INIT
 initDb();
@@ -111,24 +111,32 @@ aedes.on("publish", async (packet, client) => {
       button_state: data.button_state,
     });
 
-    console.log(`last measurement:${JSON.stringify(getLastRecords(1))}`);
 
-    const unsentRecords = getUnsentRecords();
-    console.log(
-      `There are ${unsentRecords.length} unsent records saved. Attempting to send them now.`,
-    );
+    //First try to save the latest one
+    const lastMeasurement = getLastRecords(1)[0];
+    console.log(`last measurement:${JSON.stringify(lastMeasurement)}`);
 
-    const postSuccessful = await sendToServer(unsentRecords);
+    const postSuccessful = await sendToServer(lastMeasurement);
 
     if (postSuccessful) {
-      console.log("Successfully posted, marking records as sent");
-      markRecordsAsSent(unsentRecords);
+      console.log("Successfully posted, marking record as sent");
+      markRecordsAsSent(lastMeasurement);
+    } else {
+      console.error("latest record was not successfully posted, aborting");
       return;
     }
 
-    console.log(
-      "Post was not successful. Data is saved locally and an attempt will be made on the next measurement.",
-    );
+    const unsentRecords = getUnsentRecords();
+    if(unsentRecords.length > 0) {
+      const postSuccessful = await sendHistoryToServer(unsentRecords);
+        if (postSuccessful) {
+          console.log("HISTORY Successfully posted, marking record as sent");
+          markRecordsAsSent(unsentRecords);
+        } else {
+            console.error("historical records were not successfully posted")
+        }
+    }
+
     console.log(
       "-------------------------------------------------------------------------------------------------------",
     );

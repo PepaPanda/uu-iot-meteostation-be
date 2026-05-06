@@ -1,5 +1,5 @@
-import type { CollectTelemetryDto } from './data.schema';
-import { createTelemetry } from './data.repository';
+import type { CollectTelemetryDto, CollectHistoricalTelemetriesDto } from './data.schema';
+import { createTelemetry, createMultipleTelemetries } from './data.repository';
 
 import { emitTelemetrySseEvent } from '../../api/telemetry/telemetry.sse';
 import { toGetLatestTelemetryResponseDto } from '../../api/telemetry/telemetry.dto';
@@ -15,4 +15,12 @@ export const collectTelemetry = async (
     'telemetry',
     toGetLatestTelemetryResponseDto(createdTelemetry),
   );
+};
+
+export const collectHistoricalTelemetry = async (
+  telemetries: CollectHistoricalTelemetriesDto['records'],
+  gatewayId: number,
+): Promise<void> => {
+  await createMultipleTelemetries(telemetries, gatewayId);
+  return;
 };
