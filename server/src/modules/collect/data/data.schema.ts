@@ -14,4 +14,8 @@ export const collectTelemetrySchema = z.object({
 
 export type CollectTelemetryDto = z.infer<typeof collectTelemetrySchema>;
 
+export const collectHistoricalTelemetriesSchema = z.object({
+  records: z.array(collectTelemetrySchema)
+});
 
+export type CollectHistoricalTelemetriesDto = z.infer<typeof collectHistoricalTelemetriesSchema>;

@@ -200,23 +200,30 @@ export const getLastRecords = (limit = 10) => {
   return stmt.all(limit);
 };
 
-export const getUnsentRecords = () => {
+export const getUnsentRecords = (limit = 30) => {
   if (!db) initDb();
 
   const stmt = db.prepare(`
     SELECT *
     FROM records
     WHERE sent_to_server = 0
-    ORDER BY id DESC
+    ORDER BY id ASC
+    LIMIT ?
   `);
 
-  return stmt.all();
+  return stmt.all(limit);
 };
 
 export const markRecordsAsSent = (records) => {
   if (!db) initDb();
 
-  if (!records?.length) return;
+  if(!records) return console.error("couldnt mark records as sent");
+
+  if (!Array.isArray(records)) {
+    const record = records;
+    records = [];
+    records.push(record);
+  }
 
   const ids = records.map((record) => record.id);
 

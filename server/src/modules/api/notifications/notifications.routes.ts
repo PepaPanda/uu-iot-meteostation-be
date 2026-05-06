@@ -10,8 +10,8 @@ import requireUserRole from '../../../middleware/requireUserRole';
 import { listNotificationsController, createNotificationController, acknowledgeNotificationController } from './notifications.controller';
 import { listNotificationsSchema, createNotificationSchema, notificationIdParamsSchema } from './notifications.schema';
 
-notificationsRouter.get(
-  '/',
+notificationsRouter.post(
+  '/list',
   authenticate,
   validateBody(listNotificationsSchema),
   listNotificationsController,

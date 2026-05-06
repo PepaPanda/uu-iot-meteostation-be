@@ -52,3 +52,65 @@ export const createTelemetry = async (
 
   return result.rows[0];
 };
+
+export const createMultipleTelemetries = async (
+  telemetries: CollectTelemetryDto[],
+  gatewayId: number,
+): Promise<void> => {
+  if (telemetries.length === 0) {
+    return;
+  }
+
+  const values = telemetries.flatMap((telemetry) => [
+    telemetry.remoteId,
+    gatewayId,
+    telemetry.measuredAtUtc,
+    telemetry.temperature,
+    telemetry.pressure,
+    telemetry.humidity,
+    telemetry.lighting,
+    telemetry.raindropsAmount,
+    telemetry.nodeBatteryLevel ?? null,
+    telemetry.nodeWifiStrength ?? null,
+  ]);
+
+  const placeholders = telemetries
+    .map((_, index) => {
+      const offset = index * 10;
+
+      return `(
+        $${offset + 1},
+        $${offset + 2},
+        $${offset + 3},
+        NOW(),
+        $${offset + 4},
+        $${offset + 5},
+        $${offset + 6},
+        $${offset + 7},
+        $${offset + 8},
+        $${offset + 9},
+        $${offset + 10}
+      )`;
+    })
+    .join(', ');
+
+  await dbPool.query(
+    `
+      INSERT INTO "telemetries" (
+        "telemetry_remote_id",
+        "telemetry_gateway_id",
+        "telemetry_measured_at_utc",
+        "telemetry_received_at_utc",
+        "telemetry_temperature",
+        "telemetry_pressure",
+        "telemetry_humidity",
+        "telemetry_lighting",
+        "telemetry_raindrops_amount",
+        "telemetry_node_battery_level",
+        "telemetry_node_wifi_strength"
+      )
+      VALUES ${placeholders}
+    `,
+    values,
+  );
+};

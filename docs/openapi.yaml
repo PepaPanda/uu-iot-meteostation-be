@@ -1351,8 +1351,8 @@ paths:
           $ref: '#/components/responses/UnprocessableEntity'
         '500':
           $ref: '#/components/responses/InternalServerError'
-  /api/gateways:
-    get:
+  /api/gateways/list:
+    post:
       tags:
       - Gateways
       summary: List gateways
@@ -1388,6 +1388,7 @@ paths:
           $ref: '#/components/responses/UnprocessableEntity'
         '500':
           $ref: '#/components/responses/InternalServerError'
+  /api/gateways:
     post:
       tags:
       - Gateways
@@ -1564,8 +1565,8 @@ paths:
           $ref: '#/components/responses/UnprocessableEntity'
         '500':
           $ref: '#/components/responses/InternalServerError'
-  /api/notifications:
-    get:
+  /api/notifications/list:
+    post:
       tags:
       - Notifications
       summary: List notifications
@@ -1597,6 +1598,7 @@ paths:
           $ref: '#/components/responses/UnprocessableEntity'
         '500':
           $ref: '#/components/responses/InternalServerError'
+  /api/notifications:
     post:
       tags:
       - Notifications
@@ -1719,7 +1721,7 @@ paths:
         '500':
           $ref: '#/components/responses/InternalServerError'
   /api/telemetry/history/{gatewayId}:
-    get:
+    post:
       tags:
       - Telemetry
       summary: Get telemetry history
@@ -1815,7 +1817,7 @@ paths:
         '500':
           $ref: '#/components/responses/InternalServerError'
   /api/telemetry/trends/{gatewayId}:
-    get:
+    post:
       tags:
       - Telemetry
       summary: Get telemetry trends
@@ -2077,8 +2079,8 @@ paths:
           $ref: '#/components/responses/UnprocessableEntity'
         '500':
           $ref: '#/components/responses/InternalServerError'
-  /api/users:
-    get:
+  /api/users/list:
+    post:
       tags:
       - Users
       summary: List users

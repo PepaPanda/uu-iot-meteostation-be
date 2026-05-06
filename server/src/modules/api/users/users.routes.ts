@@ -19,7 +19,7 @@ usersRouter.delete('/:userId', authenticate, requireUserRole('administrator'), v
 
 usersRouter.post('/invite', authenticate, requireUserRole('administrator'), validateBody(inviteUserSchema), inviteController);
 
-usersRouter.get('/',  authenticate, requireUserRole('supervisor'), validateBody(listUsersSchema), listUsersController);
+usersRouter.post('/list',  authenticate, requireUserRole('supervisor'), validateBody(listUsersSchema), listUsersController);
 
 usersRouter.get('/:userId', authenticate, requireUserRole('operator'), validateParams(userIdParamsSchema), getUserController);
 

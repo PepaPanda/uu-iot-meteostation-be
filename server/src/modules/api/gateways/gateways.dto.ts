@@ -71,3 +71,15 @@ export const toGetGatewayHealthResponseDto = (
 ): GetGatewayHealthResponseDto => {
     return gatewayHealth;
 };
+
+export type CreateGatewayResponseDto = {
+    gateway: GetGatewayResponseDto;
+    secret: string;
+}
+
+export const toCreateGatewayResponseDto = (gateway: Gateway, secret: string): CreateGatewayResponseDto  => {
+  return {
+    gateway: toGetGatewayResponseDto(gateway),
+    secret
+  };
+};

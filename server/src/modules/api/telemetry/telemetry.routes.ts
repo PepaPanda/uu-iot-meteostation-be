@@ -17,7 +17,7 @@ telemetryRouter.get('/current/:gatewayId', authenticate, requireUserRole('guest'
 // Returns historical telemetry for charts and tables.
 telemetryRouter.post('/history/:gatewayId', authenticate, requireUserRole('guest'), validateParams(gatewayIdParamsSchema), validateBody(getTelemetryHistorySchema), getTelemetryHistoryController);
 
-//Pro teď IGNORUJ SSE endpoint (Server-Sent Events stream for automatic FE updates with newly received telemetry.)
+//Server-Sent Events stream for automatic FE updates with newly received telemetry.
 telemetryRouter.get('/stream/:gatewayId', authenticate, requireUserRole('guest'), validateParams(gatewayIdParamsSchema), streamTelemetryController);
 
 // Returns bucketed telemetry aggregates for charts and simple trend visualization.
