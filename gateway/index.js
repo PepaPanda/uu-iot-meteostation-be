@@ -59,14 +59,31 @@ aedes.on("publish", async (packet, client) => {
     console.log("----------------------");
 
     let data;
+
     try {
       data = JSON.parse(payload);
     } catch (error) {
+      console.log("Invalid MQTT JSON payload:");
+      console.log(payload);
       console.log(error);
+      return;
     }
 
     Object.keys(data).forEach((key) => {
-      if (!data[key] || data[key] < 0) {
+      const value = data[key];
+
+      // null/undefined
+      if (value === undefined || value === null) {
+        data[key] = null;
+        return;
+      }
+
+      // invalid numeric values
+      if (
+        typeof value === "number" &&
+        (!Number.isFinite(value) || value < 0)
+        && key !== "wifi_rssi"
+      ) {
         data[key] = null;
       }
     });
@@ -75,9 +92,25 @@ aedes.on("publish", async (packet, client) => {
       temperature: data.temp,
       humidity: data.humidity,
       pressure: data.pressure,
-      raindrops_amount: data.raindrops_amount || 0,
       light: data.lux,
+      raindrops_amount: data.raindrops_amount || 0,
+
+      battery_voltage: data.battery_voltage,
+      battery_percent: data.battery_percent,
+      wifi_rssi: data.wifi_rssi,
+      counter: data.counter,
+
+      send_reason: data.send_reason,
+      wake_reason: data.wake_reason,
+      mode: data.mode,
+
+      bme_ok: data.bme_ok,
+      bh1750_ok: data.bh1750_ok,
+      fuel_ok: data.fuel_ok,
+      reed_state: data.reed_state,
+      button_state: data.button_state,
     });
+
     console.log(`last measurement:${JSON.stringify(getLastRecords(1))}`);
 
     const unsentRecords = getUnsentRecords();
