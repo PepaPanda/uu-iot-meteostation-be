@@ -10,6 +10,8 @@ import { globalErrorHandler, invalidSyntaxErrorHandler } from './middleware/erro
 
 import cookieParser from 'cookie-parser';
 
+// env.PORT is for railway
+const PORT = env.APP_STAGE === 'production' ? env.PORT : env.EXPRESS_PORT;
 
 export default () => {
     const app = express();
@@ -36,8 +38,8 @@ export default () => {
 
     app.use(globalErrorHandler);
 
-    app.listen(env.EXPRESS_PORT, () => {
-    console.log(`Server running on http://localhost:${env.EXPRESS_PORT}`);
-    console.log(`APP_ENV: ${env.APP_STAGE}`);
+    app.listen(PORT, '0.0.0.0', () => {
+        console.log(`Server running on http://localhost:${env.EXPRESS_PORT}`);
+        console.log(`APP_ENV: ${env.APP_STAGE}`);
     });
 };
