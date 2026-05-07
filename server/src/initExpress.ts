@@ -12,6 +12,10 @@ import cookieParser from 'cookie-parser';
 
 // env.PORT is for railway
 const PORT = env.APP_STAGE === 'production' ? env.PORT : env.EXPRESS_PORT;
+const ALLOWED_ORIGINS = [
+  'http://localhost:5173',
+  env.FRONTEND_URL
+];
 
 export default () => {
     const app = express();
@@ -20,7 +24,16 @@ export default () => {
     app.use(helmet());
 
     // CORS
-    app.use(cors());
+    app.use(cors({
+        origin(origin, callback) {
+            if (!origin || ALLOWED_ORIGINS.includes(origin)) {
+            callback(null, true);
+            return;
+            }
+            callback(new Error(`CORS blocked for origin: ${origin}`));
+        },
+        credentials: true
+    }));
 
     // Request logging
     app.use(morgan('dev'));
