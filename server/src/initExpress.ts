@@ -11,7 +11,7 @@ import { globalErrorHandler, invalidSyntaxErrorHandler } from './middleware/erro
 import cookieParser from 'cookie-parser';
 
 // env.PORT is for railway
-const PORT = env.APP_STAGE === 'production' ? env.PORT : env.EXPRESS_PORT;
+const PORT = env.APP_STAGE === 'production' ? env.PORT ?? env.EXPRESS_PORT : env.EXPRESS_PORT;
 const ALLOWED_ORIGINS = [
   'http://localhost:5173',
   env.FRONTEND_URL
