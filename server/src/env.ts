@@ -27,10 +27,11 @@ const envSchema = z.object({
     .enum(['production', 'development', 'test'])
     .default('development'),
   EXPRESS_PORT: z.coerce.number().positive().default(3000),
-  PORT: z.coerce.number().positive(), // process.env.PORT is injected automatically by railway
+  PORT: z.coerce.number().positive().optional(), // process.env.PORT is injected automatically by railway
   DB_URL: z.string().startsWith('postgresql://'),
   SESSION_MAX_AGE: z.custom<StringValue>().default('1d'),
   SESSION_TOKEN_ROTATE_AFTER: z.custom<StringValue>().default('15m'),
+  FRONTEND_URL: z.string().startsWith('https://')
 });
 
 export type Env = z.infer<typeof envSchema>;
