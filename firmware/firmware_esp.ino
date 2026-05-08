@@ -1,3 +1,4 @@
+#include <esp_wifi.h>
 #include <WiFi.h>
 #include <WebServer.h>
 #include <ArduinoMqttClient.h>
@@ -11,6 +12,7 @@
 #include "driver/rtc_io.h"
 #include <math.h>
 #include <esp_system.h>
+#include <DNSServer.h>
 
 // ======================================================
 // BOARD / PINS
@@ -32,6 +34,8 @@ const unsigned long BUTTON_HOLD_MS = 5000;
 // ======================================================
 
 WebServer configServer(80);
+DNSServer dnsServer;
+const byte DNS_PORT = 53;
 
 const char SETUP_AP_SSID[] = "MeteoStation-Setup";
 const char SETUP_AP_PASS[] = "meteosetup"; // min. 8 znaků
@@ -438,7 +442,10 @@ void handleConfigSave() {
     "<!doctype html><html><body><h2>Saved</h2><p>Configuration saved. Device is restarting...</p></body></html>"
   );
 
-  delay(1000);
+  Serial.println("Config saved, restarting in 3 seconds...");
+  Serial.flush();
+
+  delay(3000);
   ESP.restart();
 }
 
@@ -447,14 +454,28 @@ void startConfigMode() {
   Serial.println("====================================");
   Serial.println("Entering config mode");
   Serial.println("====================================");
+  Serial.flush();
 
-  WiFi.disconnect(true);
-  delay(300);
+  WiFi.persistent(false);
+  WiFi.setAutoReconnect(false);
+
+  Serial.println("AP checkpoint A: before WiFi.mode(WIFI_AP)");
+  Serial.flush();
 
   WiFi.mode(WIFI_AP);
+
+  Serial.println("AP checkpoint B: after WiFi.mode(WIFI_AP)");
+  Serial.flush();
+
   WiFi.softAPConfig(AP_IP, AP_GATEWAY, AP_SUBNET);
 
+  Serial.println("AP checkpoint C: after softAPConfig");
+  Serial.flush();
+
   bool ok = WiFi.softAP(SETUP_AP_SSID, SETUP_AP_PASS);
+
+  Serial.println("AP checkpoint D: after softAP");
+  Serial.flush();
 
   if (!ok) {
     Serial.println("Failed to start AP.");
@@ -474,6 +495,7 @@ void startConfigMode() {
   Serial.println(SETUP_AP_PASS);
   Serial.print("Open: http://");
   Serial.println(WiFi.softAPIP());
+  Serial.flush();
 
   while (true) {
     configServer.handleClient();
@@ -807,64 +829,30 @@ void updateLastSensorSnapshot(const SensorData& data) {
 // WIFI / MQTT
 // ======================================================
 
-volatile bool wifiBeginDone = false;
-
-void wifiBeginTask(void* parameter) {
-  WiFi.begin(config.wifiSsid, config.wifiPass);
-  wifiBeginDone = true;
-  vTaskDelete(NULL);
-}
 
 bool connectWiFiOnce(int& rssiOut) {
   rssiOut = -999;
-  wifiBeginDone = false;
 
   Serial.println();
   Serial.print("Connecting to WiFi: ");
   Serial.println(config.wifiSsid);
+  Serial.flush();
 
-  WiFi.disconnect(true, true);
-  delay(500);
+  WiFi.persistent(false);
+  WiFi.setAutoReconnect(false);
 
-  WiFi.mode(WIFI_OFF);
-  delay(500);
+  Serial.println("WiFi checkpoint A: before WiFi.begin");
+  Serial.flush();
 
-  WiFi.mode(WIFI_STA);
-  delay(300);
+  WiFi.begin(config.wifiSsid, config.wifiPass);
 
-  WiFi.setSleep(false);
-
-  Serial.println("Starting WiFi.begin task...");
-
-  xTaskCreate(
-    wifiBeginTask,
-    "wifiBeginTask",
-    4096,
-    NULL,
-    1,
-    NULL
-  );
-
-  unsigned long beginStart = millis();
-
-  while (!wifiBeginDone && millis() - beginStart < 5000) {
-    delay(100);
-    Serial.print("b");
-  }
-
-  Serial.println();
-
-  if (!wifiBeginDone) {
-    Serial.println("WiFi.begin appears stuck. Restarting ESP.");
-    delay(500);
-    ESP.restart();
-  }
-
-  Serial.println("WiFi.begin returned, waiting for connection...");
+  Serial.println("WiFi checkpoint B: after WiFi.begin");
+  Serial.flush();
 
   unsigned long connectStart = millis();
 
-  while (WiFi.status() != WL_CONNECTED && millis() - connectStart < WIFI_CONNECT_TIMEOUT_MS) {
+  while (WiFi.status() != WL_CONNECTED &&
+         millis() - connectStart < WIFI_CONNECT_TIMEOUT_MS) {
     delay(250);
     Serial.print(".");
   }
@@ -879,15 +867,13 @@ bool connectWiFiOnce(int& rssiOut) {
     Serial.println(WiFi.localIP());
     Serial.print("RSSI: ");
     Serial.println(rssiOut);
+    Serial.flush();
 
     return true;
   }
 
   Serial.println("WiFi connect failed.");
-
-  WiFi.disconnect(true, true);
-  delay(300);
-  WiFi.mode(WIFI_OFF);
+  Serial.flush();
 
   return false;
 }
@@ -913,6 +899,15 @@ bool connectMQTTOnce() {
 
   Serial.println("MQTT connected.");
   return true;
+}
+
+void cleanupNetworkAfterSend() {
+  Serial.println("Cleaning up network...");
+
+  mqttClient.stop();
+  delay(100);
+
+  Serial.println("Network cleanup done.");
 }
 
 bool publishTelemetryPayload(
@@ -975,15 +970,14 @@ bool sendTelemetryOnce(const SensorData& data, const char* sendReason, const cha
   int wifiRssi = -999;
 
   if (!connectWiFiOnce(wifiRssi)) {
+    cleanupNetworkAfterSend();
     return false;
   }
 
   delay(300);
 
   if (!connectMQTTOnce()) {
-    mqttClient.stop();
-    WiFi.disconnect(true);
-    WiFi.mode(WIFI_OFF);
+    cleanupNetworkAfterSend();
     return false;
   }
 
@@ -995,9 +989,7 @@ bool sendTelemetryOnce(const SensorData& data, const char* sendReason, const cha
   delay(300);
   mqttClient.poll();
 
-  mqttClient.stop();
-  WiFi.disconnect(true);
-  WiFi.mode(WIFI_OFF);
+  cleanupNetworkAfterSend();
 
   return ok;
 }
@@ -1079,8 +1071,8 @@ void goToDeepSleep(uint32_t sleepSec) {
 
   rtcLastSleepSec = sleepSec;
 
-  WiFi.disconnect(true);
-  WiFi.mode(WIFI_OFF);
+  mqttClient.stop();
+  delay(100);
 
   pinMode(REED_PIN, INPUT_PULLUP);
   pinMode(BUTTON_PIN, INPUT_PULLUP);
@@ -1108,6 +1100,9 @@ void goToDeepSleep(uint32_t sleepSec) {
 void setup() {
   Serial.begin(115200);
   delay(800);
+
+  WiFi.persistent(false);
+  WiFi.setAutoReconnect(false);
 
   Serial.println();
   Serial.println("====================================");
