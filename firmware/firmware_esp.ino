@@ -38,7 +38,7 @@ DNSServer dnsServer;
 const byte DNS_PORT = 53;
 
 const char SETUP_AP_SSID[] = "MeteoStation-Setup";
-const char SETUP_AP_PASS[] = "meteosetup"; // min. 8 znaků
+const char SETUP_AP_PASS[] = "meteosetup"; // min. 8 znaku
 
 const IPAddress AP_IP(192, 168, 4, 1);
 const IPAddress AP_GATEWAY(192, 168, 4, 1);
@@ -130,17 +130,20 @@ const uint32_t NORMAL_INTERVAL_SEC = 30 * 60;
 const uint32_t BATTERY_SAVER_INTERVAL_SEC = 60 * 60;
 
 const uint32_t WIFI_CONNECT_TIMEOUT_MS = 12000;
-const uint8_t SEND_MAX_ATTEMPTS = 2;
+
+// Keep this conservative. If send fails, retry on next wake cycle instead of
+// hammering the ESP32 WiFi stack twice in the same boot.
+const uint8_t SEND_MAX_ATTEMPTS = 1;
 
 const float INVALID_VALUE = -1000.0f;
 
 // Rapid-change thresholds.
-// Ladit podle reálného provozu.
-const float TEMP_CHANGE_C = 2.0f;          // změna teploty za jeden check
-const float HUMIDITY_CHANGE_PCT = 12.0f;  // změna vlhkosti za jeden check
-const float PRESSURE_CHANGE_HPA = 2.0f;   // změna tlaku za jeden check
-const float LUX_CHANGE_ABS = 300.0f;      // absolutní změna světla
-const float LUX_CHANGE_REL = 0.60f;       // relativní změna světla 60 %
+// Ladit podle realneho provozu.
+const float TEMP_CHANGE_C = 2.0f;          // zmena teploty za jeden check
+const float HUMIDITY_CHANGE_PCT = 12.0f;  // zmena vlhkosti za jeden check
+const float PRESSURE_CHANGE_HPA = 2.0f;   // zmena tlaku za jeden check
+const float LUX_CHANGE_ABS = 300.0f;      // absolutni zmena svetla
+const float LUX_CHANGE_REL = 0.60f;       // relativni zmena svetla 60 %
 
 struct SensorData {
   float temp;
@@ -221,6 +224,27 @@ const char* wakeReasonToText(esp_sleep_wakeup_cause_t reason) {
       return "power_on_or_reset";
     default:
       return "other";
+  }
+}
+
+const char* wifiStatusToText(wl_status_t status) {
+  switch (status) {
+    case WL_IDLE_STATUS:
+      return "WL_IDLE_STATUS";
+    case WL_NO_SSID_AVAIL:
+      return "WL_NO_SSID_AVAIL";
+    case WL_SCAN_COMPLETED:
+      return "WL_SCAN_COMPLETED";
+    case WL_CONNECTED:
+      return "WL_CONNECTED";
+    case WL_CONNECT_FAILED:
+      return "WL_CONNECT_FAILED";
+    case WL_CONNECTION_LOST:
+      return "WL_CONNECTION_LOST";
+    case WL_DISCONNECTED:
+      return "WL_DISCONNECTED";
+    default:
+      return "UNKNOWN";
   }
 }
 
@@ -394,7 +418,7 @@ String buildConfigPage() {
   addModeOption(html, "battery_saver", "Battery saver - 60 minutes", MODE_BATTERY_SAVER);
   html += "</select>";
 
-  html += "<p class='hint'>Zařízení se mezitím budí každou minutu a kontroluje rychlé změny počasí/světla. Debug režim je pro vývoj.</p>";
+  html += "<p class='hint'>Zarizeni se mezitim budi kazdou minutu a kontroluje rychle zmeny pocasi/svetla. Debug rezim je pro vyvoj.</p>";
 
   html += "<button type='submit'>Save and restart</button>";
   html += "</form>";
@@ -407,6 +431,11 @@ String buildConfigPage() {
 
 void handleConfigRoot() {
   configServer.send(200, "text/html; charset=utf-8", buildConfigPage());
+}
+
+void redirectToConfigRoot() {
+  configServer.sendHeader("Location", "/", true);
+  configServer.send(302, "text/plain", "");
 }
 
 void handleConfigSave() {
@@ -454,28 +483,20 @@ void startConfigMode() {
   Serial.println("====================================");
   Serial.println("Entering config mode");
   Serial.println("====================================");
-  Serial.flush();
 
   WiFi.persistent(false);
   WiFi.setAutoReconnect(false);
 
   Serial.println("AP checkpoint A: before WiFi.mode(WIFI_AP)");
-  Serial.flush();
-
   WiFi.mode(WIFI_AP);
 
   Serial.println("AP checkpoint B: after WiFi.mode(WIFI_AP)");
-  Serial.flush();
-
   WiFi.softAPConfig(AP_IP, AP_GATEWAY, AP_SUBNET);
 
   Serial.println("AP checkpoint C: after softAPConfig");
-  Serial.flush();
-
   bool ok = WiFi.softAP(SETUP_AP_SSID, SETUP_AP_PASS);
 
   Serial.println("AP checkpoint D: after softAP");
-  Serial.flush();
 
   if (!ok) {
     Serial.println("Failed to start AP.");
@@ -484,8 +505,30 @@ void startConfigMode() {
     }
   }
 
+  // Captive portal DNS: answer every domain with the ESP32 AP IP.
+  dnsServer.start(DNS_PORT, "*", AP_IP);
+
   configServer.on("/", HTTP_GET, handleConfigRoot);
   configServer.on("/save", HTTP_GET, handleConfigSave);
+
+  // Android / Chrome captive portal checks.
+  configServer.on("/generate_204", HTTP_GET, redirectToConfigRoot);
+  configServer.on("/gen_204", HTTP_GET, redirectToConfigRoot);
+
+  // iOS / macOS captive portal check.
+  configServer.on("/hotspot-detect.html", HTTP_GET, []() {
+    configServer.send(200, "text/html; charset=utf-8", buildConfigPage());
+  });
+
+  // Windows captive portal checks.
+  configServer.on("/connecttest.txt", HTTP_GET, redirectToConfigRoot);
+  configServer.on("/ncsi.txt", HTTP_GET, redirectToConfigRoot);
+
+  // Fallback: show config page for anything else.
+  configServer.onNotFound([]() {
+    configServer.send(200, "text/html; charset=utf-8", buildConfigPage());
+  });
+
   configServer.begin();
 
   Serial.println("Config AP started.");
@@ -495,9 +538,9 @@ void startConfigMode() {
   Serial.println(SETUP_AP_PASS);
   Serial.print("Open: http://");
   Serial.println(WiFi.softAPIP());
-  Serial.flush();
 
   while (true) {
+    dnsServer.processNextRequest();
     configServer.handleClient();
     delay(5);
   }
@@ -620,6 +663,7 @@ void waitForReedReleaseBeforeSleep() {
 
 void initSensors() {
   Wire.begin(I2C_SDA, I2C_SCL);
+  Wire.setTimeOut(50);
   delay(100);
 
   Serial.println("Initializing BME280...");
@@ -829,25 +873,19 @@ void updateLastSensorSnapshot(const SensorData& data) {
 // WIFI / MQTT
 // ======================================================
 
-
 bool connectWiFiOnce(int& rssiOut) {
   rssiOut = -999;
 
   Serial.println();
   Serial.print("Connecting to WiFi: ");
   Serial.println(config.wifiSsid);
-  Serial.flush();
 
   WiFi.persistent(false);
   WiFi.setAutoReconnect(false);
 
   Serial.println("WiFi checkpoint A: before WiFi.begin");
-  Serial.flush();
-
   WiFi.begin(config.wifiSsid, config.wifiPass);
-
   Serial.println("WiFi checkpoint B: after WiFi.begin");
-  Serial.flush();
 
   unsigned long connectStart = millis();
 
@@ -859,7 +897,9 @@ bool connectWiFiOnce(int& rssiOut) {
 
   Serial.println();
 
-  if (WiFi.status() == WL_CONNECTED) {
+  wl_status_t status = WiFi.status();
+
+  if (status == WL_CONNECTED) {
     rssiOut = WiFi.RSSI();
 
     Serial.println("WiFi connected.");
@@ -867,13 +907,14 @@ bool connectWiFiOnce(int& rssiOut) {
     Serial.println(WiFi.localIP());
     Serial.print("RSSI: ");
     Serial.println(rssiOut);
-    Serial.flush();
 
     return true;
   }
 
-  Serial.println("WiFi connect failed.");
-  Serial.flush();
+  Serial.print("WiFi connect failed. Status: ");
+  Serial.print((int)status);
+  Serial.print(" ");
+  Serial.println(wifiStatusToText(status));
 
   return false;
 }
@@ -904,6 +945,9 @@ bool connectMQTTOnce() {
 void cleanupNetworkAfterSend() {
   Serial.println("Cleaning up network...");
 
+  // Do not call WiFi.disconnect() or WiFi.mode(WIFI_OFF) here.
+  // Deep sleep will shut down the radio anyway, and avoiding explicit WiFi
+  // teardown prevents ESP32 WiFi/NVS weirdness.
   mqttClient.stop();
   delay(100);
 
@@ -928,6 +972,8 @@ bool publishTelemetryPayload(
   payload += ",\"battery_percent\":" + String(data.battery_percent, 2);
   payload += ",\"wifi_rssi\":" + String(wifiRssi);
   payload += ",\"counter\":" + String(rtcPublishCounter);
+  payload += ",\"rtc_time_sec\":" + String((unsigned long long)rtcNowSec);
+  payload += ",\"failures\":" + String(rtcConsecutiveFailures);
 
   payload += ",\"send_reason\":\"" + String(sendReason) + "\"";
   payload += ",\"wake_reason\":\"" + String(wakeReason) + "\"";
