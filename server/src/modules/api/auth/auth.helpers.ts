@@ -24,7 +24,7 @@ export const attachSessionCookie = (res: Response, sessionToken: string): void =
       res.cookie(SESSION_COOKIE_NAME, sessionToken, {
         httpOnly: true,
         secure: env.APP_STAGE === 'production',
-        sameSite: 'lax',
+        sameSite: 'none',
         maxAge: ms(env.SESSION_MAX_AGE),
         path: '/',
     });
