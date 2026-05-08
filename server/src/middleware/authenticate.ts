@@ -1,8 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { UnauthorizedError, InternalServerError } from '../shared/errors';
-
-import ms from 'ms';
-import env from '../env';
+import { attachSessionCookie, clearSessionCookie } from '../modules/api/auth/auth.helpers';
 
 import { verifySessionToken, rotateToken } from '../modules/api/auth/auth.service';
 
@@ -18,7 +16,7 @@ export default async (req: Request, res: Response, next: NextFunction): Promise<
 
     //403 for bad tokens
     if(!session || status === 'revoked' || status === 'not-found' || status === 'session-expired') {
-        res.clearCookie('meteoSessionToken');
+        clearSessionCookie(res);
         throw new UnauthorizedError();
     }
 
@@ -27,14 +25,7 @@ export default async (req: Request, res: Response, next: NextFunction): Promise<
     //Rotate new token for valid sessions if needed
     if(status === 'token-expired') {
         const newToken = await rotateToken(session.sessionId, sessionToken);
-        res.cookie('meteoSessionToken', newToken, {
-                httpOnly: true,
-                secure: env.NODE_ENV === 'production',
-                sameSite: 'lax',
-                path: '/',
-                maxAge: ms(env.SESSION_MAX_AGE),
-            });
-
+        attachSessionCookie(res, newToken);
         return next();
     }
 
