@@ -23,7 +23,7 @@ export const getRequiredSession = (req: Request): Session => {
 export const attachSessionCookie = (res: Response, sessionToken: string): void => {
       res.cookie(SESSION_COOKIE_NAME, sessionToken, {
         httpOnly: true,
-        secure: true
+        secure: true,
         sameSite: 'lax',
         maxAge: ms(env.SESSION_MAX_AGE),
         path: '/',
