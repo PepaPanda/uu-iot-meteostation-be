@@ -24,7 +24,7 @@ export const attachSessionCookie = (res: Response, sessionToken: string): void =
       res.cookie(SESSION_COOKIE_NAME, sessionToken, {
         httpOnly: true,
         secure: true,
-        sameSite: 'lax',
+        sameSite: env.APP_STAGE === 'production' ? 'strict' : 'none',
         maxAge: ms(env.SESSION_MAX_AGE),
         path: '/',
     });
@@ -34,7 +34,7 @@ export const clearSessionCookie = (res: Response): void => {
   res.clearCookie(SESSION_COOKIE_NAME, {
     httpOnly: true,
     secure: true,
-    sameSite: 'lax',
+    sameSite: env.APP_STAGE === 'production' ? 'strict' : 'none',
     path: '/',
   });
 };
