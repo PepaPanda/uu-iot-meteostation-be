@@ -25,7 +25,7 @@ export const createTelemetry = async (
       RETURNING
         "telemetry_id" AS "id",
         "telemetry_remote_id" AS "remoteId",
-        "telemetry_gateway_id" AS "gatewayId",
+        "telemetry_gateway_id"::int AS "gatewayId",
         "telemetry_measured_at_utc" AS "measuredAtUtc",
         "telemetry_received_at_utc" AS "receivedAtUtc",
         "telemetry_temperature" AS "temperature",
