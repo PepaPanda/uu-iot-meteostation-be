@@ -17,21 +17,25 @@ export const handleNotificationsOnTelemetryReceived = async (input: {
         previousTelemetry,
     } = input;
 
-    const gatewayId = gateway.gatewayId;
-    const gatewayName = gateway.gatewayName;
-    const previousGatewayStatus = gateway.gatewayLastStatus;
+    const {gatewayId, gatewayName, gatewayLastStatus} = gateway;
 
-    const currentGatewayStatus: Gateway['gatewayLastStatus'] = 'online';
-
+    // GW health info definition
+    const currentGatewayStatus = 'online';
     const currentBatteryLevel = currentTelemetry.nodeBatteryLevel;
     const previousBatteryLevel = previousTelemetry?.nodeBatteryLevel ?? null;
     const currentWifiStrength = currentTelemetry.nodeWifiStrength;
 
+    // GW rain
+    const prevRain = previousTelemetry ? previousTelemetry.raindropsAmount : 0;
+    const currentRain = currentTelemetry.raindropsAmount;
+
+
+    // Gateway just went online
     if (
         currentGatewayStatus === 'online'
         && (
-            previousGatewayStatus === 'offline'
-            || previousGatewayStatus === 'unknown'
+            gatewayLastStatus === 'offline'
+            || gatewayLastStatus === 'unknown'
         )
     ) {
         await updateGateway(gatewayId, {
@@ -46,6 +50,7 @@ export const handleNotificationsOnTelemetryReceived = async (input: {
         });
     }
 
+    // Gateway battery is dangerously low
     if (
         typeof currentBatteryLevel === 'number'
         && currentBatteryLevel <= 20
@@ -60,6 +65,7 @@ export const handleNotificationsOnTelemetryReceived = async (input: {
         });
     }
 
+     // Gateway wifi strength is low
     if (
         typeof currentWifiStrength === 'number'
         && currentWifiStrength < -75
@@ -67,6 +73,15 @@ export const handleNotificationsOnTelemetryReceived = async (input: {
         await createNotificationIfNotDuplicate({
             type: 'warning',
             text: `Gateway "${gatewayName}" (ID: ${gatewayId}) wifi signal is low, you may experience telemetry outages.`,
+            isForAdminsOnly: false,
+            gatewayId,
+        });
+    }
+
+    if (prevRain === 0 && currentRain > 0) {
+         await createNotification({
+            type: 'info',
+            text: `Gateway "${gatewayName}" just registered raindrops.`,
             isForAdminsOnly: false,
             gatewayId,
         });
