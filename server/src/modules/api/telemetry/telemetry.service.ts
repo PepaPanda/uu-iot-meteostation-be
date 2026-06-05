@@ -10,8 +10,11 @@ import {
     getLatestTelemetry,
     getTelemetryForPrediction,
     getTelemetryHistory,
-    getTelemetryTrends,
+    getTelemetryTrends
 } from './telemetry.repository';
+
+import { findGatewayById } from '../gateways/gateways.repository';
+import { handleNotificationsOnTelemetryReceived, handlePredictionNotification, shouldReadPrediction } from './telemetry.helpers';
 
 const SIMPLE_PREDICTION_BASED_ON_HOURS = 24;
 const SIMPLE_PREDICTION_MIN_POINTS = 4;
@@ -145,4 +148,25 @@ export const getPredictionService = async (
         humidityTrend,
         summary: createPredictionSummary(temperatureTrend, pressureTrend, humidityTrend),
     };
+};
+
+export const evaluateTelemetryNotificationsService = async (
+    gatewayId: number
+): Promise<void> => {
+
+    //Get telemetries
+    const latestTelemetry = await getLatestTelemetry(gatewayId);
+    const secondLatestTelemetry = await getLatestTelemetry(gatewayId, 1);
+    const gateway = await findGatewayById(gatewayId);
+
+    //get predictions
+    const prediction = await getPredictionService(gatewayId);
+
+    if(!latestTelemetry || !gateway) return console.error('gateway or telemetry not found, notification not evaluated');
+
+    if(shouldReadPrediction(prediction)) {
+        await handlePredictionNotification(gateway, prediction);
+    }
+
+    await handleNotificationsOnTelemetryReceived({gateway, currentTelemetry: latestTelemetry, previousTelemetry: secondLatestTelemetry});
 };

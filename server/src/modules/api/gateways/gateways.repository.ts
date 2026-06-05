@@ -184,7 +184,7 @@ type UpdateGatewayInput = Partial<{
   gateway_location: string | null;
   gateway_latitude: number | null;
   gateway_longitude: number | null;
-  gateway_last_status: 'unknown' | 'online' | 'offline';
+  gateway_last_status: Gateway['gatewayLastStatus'];
 }>;
 
 export const updateGateway = async (
