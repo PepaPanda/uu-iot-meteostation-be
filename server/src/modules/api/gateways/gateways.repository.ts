@@ -15,7 +15,8 @@ const gatewaySelect = (options: GatewayQueryOptions) => {
         gateway_name AS "gatewayName",
         gateway_location AS "gatewayLocation",
         gateway_latitude AS "gatewayLatitude",
-        gateway_longitude AS "gatewayLongitude"`;
+        gateway_longitude AS "gatewayLongitude"
+        gateway_last_status AS "gatewayLastStatus"`;
 };
 
 export const findGatewayById = async (
@@ -183,6 +184,7 @@ type UpdateGatewayInput = Partial<{
   gateway_location: string | null;
   gateway_latitude: number | null;
   gateway_longitude: number | null;
+  gateway_last_status: 'unknown' | 'online' | 'offline';
 }>;
 
 export const updateGateway = async (
@@ -208,7 +210,8 @@ export const updateGateway = async (
         "gateway_description" AS "gatewayDescription",
         "gateway_location" AS "gatewayLocation",
         "gateway_latitude" AS "gatewayLatitude",
-        "gateway_longitude" AS "gatewayLongitude"
+        "gateway_longitude" AS "gatewayLongitude",
+        "gateway_last_status" AS "gatewayLastStatus",
     `,
     [...values, gatewayId],
   );
@@ -259,8 +262,10 @@ export type GatewayHealthTelemetry = {
     nodeWifiStrength: number | null;
 };
 
+
 export const getLatestGatewayHealthTelemetry = async (
     gatewayId: number,
+    offset = 0,
 ): Promise<GatewayHealthTelemetry | null> => {
     const result = await dbPool.query<GatewayHealthTelemetry>(
         `
@@ -273,8 +278,9 @@ export const getLatestGatewayHealthTelemetry = async (
             WHERE "telemetry_gateway_id" = $1
             ORDER BY "telemetry_received_at_utc" DESC
             LIMIT 1
+            OFFSET $2
         `,
-        [gatewayId],
+        [gatewayId, offset],
     );
 
     return getFirstRow(result);

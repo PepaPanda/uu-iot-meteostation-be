@@ -9,11 +9,8 @@ import {
   getLatestGatewayHealthTelemetry
 } from './gateways.repository';
 import type { Gateway } from './gateways.types';
-import { hashGatewayToken, generateNewGatewayToken, resolveGatewayHealthStatus } from './gateways.helpers';
-
-import { UpdateGatewayRequestDto, GetGatewayHealthResponseDto } from './gateways.dto';
-
-import type { CreateGatewayRequestDto } from './gateways.dto';
+import { hashGatewayToken, generateNewGatewayToken, resolveGatewayHealthStatus, handleGatewayHealthNotifications } from './gateways.helpers';
+import { UpdateGatewayRequestDto, GetGatewayHealthResponseDto, type CreateGatewayRequestDto } from './gateways.dto';
 
 export const getGatewayByPlainToken = async (
   gatewayToken: string,
@@ -124,14 +121,33 @@ export const getGatewayHealthService = async (
     }
 
     const healthTelemetry = await getLatestGatewayHealthTelemetry(gatewayId);
+    const secondLatestHealthTelemetry = await getLatestGatewayHealthTelemetry(gatewayId, 1);
+
+    const gwStatus = resolveGatewayHealthStatus(
+        healthTelemetry?.lastTelemetryAtUtc ?? null,
+    );
+
+    const gwBattery = healthTelemetry?.nodeBatteryLevel ?? null;
+    const gwWifi = healthTelemetry?.nodeWifiStrength ?? null;
+    const secondLatestGwBattery = secondLatestHealthTelemetry?.nodeBatteryLevel ?? null;
+
+    await handleGatewayHealthNotifications({
+        gatewayId,
+        gatewayName: gateway.gatewayName,
+        previousGatewayStatus: gateway.gatewayLastStatus,
+        currentGatewayStatus: gwStatus,
+        currentBatteryLevel: gwBattery,
+        previousBatteryLevel: secondLatestGwBattery,
+        currentWifiStrength: gwWifi,
+    });
 
     return {
         gatewayId,
-        status: resolveGatewayHealthStatus(healthTelemetry?.lastTelemetryAtUtc ?? null),
+        status: gwStatus,
         lastTelemetryAtUtc: healthTelemetry
             ? String(healthTelemetry.lastTelemetryAtUtc)
             : null,
-        nodeBatteryLevel: healthTelemetry?.nodeBatteryLevel ?? null,
-        nodeWifiStrength: healthTelemetry?.nodeWifiStrength ?? null,
+        nodeBatteryLevel: gwBattery,
+        nodeWifiStrength: gwWifi,
     };
 };

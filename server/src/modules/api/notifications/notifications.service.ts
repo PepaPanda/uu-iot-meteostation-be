@@ -9,8 +9,11 @@ import type { User } from '../users/users.types';
 import {
   acknowledgeNotification,
   assignNotificationToTargetUsers,
+  assignNotificationToOneUser,
   createNotification,
   listNotifications,
+  existsRecentDuplicateNotification,
+  type CreateNotificationInput,
 } from './notifications.repository';
 
 export const listNotificationsService = async (
@@ -41,6 +44,47 @@ export const createNotificationService = async (
   );
 
   return createdNotification;
+};
+
+export const createNotificationForOneUserService = async (
+  dto: Omit<CreateNotificationRequestDto, 'isForAdminsOnly'> & {userId: number}
+): Promise<Omit<Notification, 'acknowledged'>> => {
+  const createdNotification = await createNotification({
+    type: dto.type,
+    text: dto.text,
+    gatewayId: dto.gatewayId ? dto.gatewayId : null,
+    isForAdminsOnly: false
+  });
+
+  await assignNotificationToOneUser(
+    createdNotification.id,
+    dto.userId,
+  );
+
+  return createdNotification;
+};
+
+export const createNotificationIfNotDuplicate = async (
+  input: CreateNotificationInput,
+): Promise<Omit<Notification, 'acknowledged'> | null> => {
+  const duplicateExists = await existsRecentDuplicateNotification({
+    type: input.type,
+    text: input.text,
+    gatewayId: input.gatewayId,
+  });
+
+  if (duplicateExists) {
+    return null;
+  }
+
+  const notification = await createNotification(input);
+
+  await assignNotificationToTargetUsers(
+    notification.id,
+    input.isForAdminsOnly,
+  );
+
+  return notification;
 };
 
 export const acknowledgeNotificationService = async (

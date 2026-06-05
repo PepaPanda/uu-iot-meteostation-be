@@ -5,4 +5,5 @@ export type Notification = {
   gatewayId: number | null;
   isForAdminsOnly: boolean;
   acknowledged: boolean;
+  createdAt: Date;
 };

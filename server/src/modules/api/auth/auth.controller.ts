@@ -1,6 +1,7 @@
 import type { Response, Request } from 'express';
 import { generateAndReturnNewSessionToken, compare as validatePassword, revokeSession, revokeAllSessions } from './auth.service';
 import { createUser as createUserService, findUserById as findUserByIdService } from '../users/users.service';
+import { createNotificationForOneUserService as createNotificationForOneUser } from '../notifications/notifications.service';
 
 import { findUserByEmail } from '../users/users.repository';
 
@@ -44,11 +45,11 @@ export const registerFromInvite = async (req: TypedRequest<RegisterUserRequestDt
     const { password, token, nickname } = req.body;
 
     const user = await createUserService(password, token, nickname);
-
     if(!user) throw new InternalServerError('Could not create user');
 
-    const sessionToken = await generateAndReturnNewSessionToken(user.userId);
+    await createNotificationForOneUser({userId: user.userId, type: 'info', text:'Welcome to meteotrack!', gatewayId: null});
 
+    const sessionToken = await generateAndReturnNewSessionToken(user.userId);
     attachSessionCookie(res, sessionToken);
 
     res.status(201).json(toLoginResponseDto(user));

@@ -6,4 +6,5 @@ export type Gateway = {
   gatewayLocation: string | null;
   gatewayLatitude: string | null;
   gatewayLongitude: string | null;
+  gatewayLastStatus: 'unknown' | 'online' | 'offline';
 };
