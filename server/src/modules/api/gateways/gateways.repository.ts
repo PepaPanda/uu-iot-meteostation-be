@@ -15,7 +15,7 @@ const gatewaySelect = (options: GatewayQueryOptions) => {
         gateway_name AS "gatewayName",
         gateway_location AS "gatewayLocation",
         gateway_latitude AS "gatewayLatitude",
-        gateway_longitude AS "gatewayLongitude"
+        gateway_longitude AS "gatewayLongitude",
         gateway_last_status AS "gatewayLastStatus"`;
 };
 
@@ -211,7 +211,7 @@ export const updateGateway = async (
         "gateway_location" AS "gatewayLocation",
         "gateway_latitude" AS "gatewayLatitude",
         "gateway_longitude" AS "gatewayLongitude",
-        "gateway_last_status" AS "gatewayLastStatus",
+        "gateway_last_status" AS "gatewayLastStatus"
     `,
     [...values, gatewayId],
   );
