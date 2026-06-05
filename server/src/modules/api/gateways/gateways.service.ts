@@ -77,9 +77,10 @@ export const listMatchingGatewaysWithPagination = async (
   };
 };
 
+
 export const updateGatewayByIdService = async (
   gatewayId: number,
-  dto: UpdateGatewayRequestDto,
+  dto: UpdateGatewayRequestDto & { lastStatus?: Gateway['gatewayLastStatus'] }
 ): Promise<Gateway | null> => {
   const updatedGateway = await updateGateway(gatewayId, {
     gateway_name: dto.name,
@@ -87,6 +88,7 @@ export const updateGatewayByIdService = async (
     gateway_location: dto.location,
     gateway_latitude: dto.latitude,
     gateway_longitude: dto.longitude,
+    gateway_last_status: dto.lastStatus
   });
 
   return updatedGateway;
@@ -121,25 +123,16 @@ export const getGatewayHealthService = async (
     }
 
     const healthTelemetry = await getLatestGatewayHealthTelemetry(gatewayId);
-    const secondLatestHealthTelemetry = await getLatestGatewayHealthTelemetry(gatewayId, 1);
 
     const gwStatus = resolveGatewayHealthStatus(
         healthTelemetry?.lastTelemetryAtUtc ?? null,
     );
 
+    // Notifications currently handled on GET gateway health. It would be better to automate this with cron instead of a request in the future
+    handleGatewayHealthNotifications({gateway, currentStatus: gwStatus});
+
     const gwBattery = healthTelemetry?.nodeBatteryLevel ?? null;
     const gwWifi = healthTelemetry?.nodeWifiStrength ?? null;
-    const secondLatestGwBattery = secondLatestHealthTelemetry?.nodeBatteryLevel ?? null;
-
-    await handleGatewayHealthNotifications({
-        gatewayId,
-        gatewayName: gateway.gatewayName,
-        previousGatewayStatus: gateway.gatewayLastStatus,
-        currentGatewayStatus: gwStatus,
-        currentBatteryLevel: gwBattery,
-        previousBatteryLevel: secondLatestGwBattery,
-        currentWifiStrength: gwWifi,
-    });
 
     return {
         gatewayId,

@@ -598,6 +598,7 @@ components:
       - gatewayId
       - isForAdminsOnly
       - acknowledged
+      - createdAt
       properties:
         id:
           type: integer
@@ -617,6 +618,10 @@ components:
         acknowledged:
           type: boolean
           example: false
+        createdAt:
+          type: string
+          format: date-time
+          example: '2026-04-05T10:00:00Z'
       example:
         id: 1
         text: Gateway 1 is offline.
@@ -624,6 +629,7 @@ components:
         gatewayId: 1
         isForAdminsOnly: false
         acknowledged: false
+        createdAt: '2026-04-05T10:00:00Z'
     ListNotificationsResponseDto:
       type: object
       required:
@@ -641,6 +647,7 @@ components:
           gatewayId: 1
           isForAdminsOnly: false
           acknowledged: false
+          createdAt: '2026-04-05T10:00:00Z'
     CreateNotificationResponseDto:
       type: object
       required:

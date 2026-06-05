@@ -38,6 +38,7 @@ export const toListNotificationsResponseDto = (notifications: Notification[]): L
         type: n.type,
         gatewayId: n.gatewayId,
         isForAdminsOnly: n.isForAdminsOnly,
+        createdAt: n.createdAt,
         acknowledged: n.acknowledged
     }))};
 };
@@ -48,13 +49,13 @@ export const toCreateNotificationResponseDto = (n: Omit<Notification, 'acknowled
         text: n.text,
         gatewayId: n.gatewayId,
         isForAdminsOnly: n.isForAdminsOnly,
-        id: n.id,
+        id: n.id
     };
 };
 
 export const toAcknowledgeNotificationResponseDto = (n: Pick<Notification, 'id' | 'acknowledged'>): AcknowledgeNotificationResponseDto => {
     return {
         id: n.id,
-        acknowledged: n.acknowledged,
+        acknowledged: n.acknowledged
     };
 };

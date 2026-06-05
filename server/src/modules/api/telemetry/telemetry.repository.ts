@@ -42,6 +42,7 @@ const telemetrySelectSql = `
 
 export const getLatestTelemetry = async (
     gatewayId: number,
+    offset = 0
 ): Promise<Telemetry | null> => {
     const result = await dbPool.query<Telemetry>(
         `
@@ -51,8 +52,9 @@ export const getLatestTelemetry = async (
             WHERE "telemetry_gateway_id" = $1
             ORDER BY "telemetry_measured_at_utc" DESC
             LIMIT 1
+            OFFSET $2;
         `,
-        [gatewayId],
+        [gatewayId, offset],
     );
 
     return getFirstRow(result);
