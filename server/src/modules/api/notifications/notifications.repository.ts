@@ -25,6 +25,7 @@ const notificationSelectSql = `
   n."notification_type" AS "type",
   n."notification_gateway_id" AS "gatewayId",
   n."notification_is_for_admins_only" AS "isForAdminsOnly",
+  n."notification_created_at" AS "createdAt",
   un."acknowledged" AS "acknowledged"
 `;
 
@@ -78,7 +79,8 @@ export const createNotification = async (
         "notification_text" AS "text",
         "notification_type" AS "type",
         "notification_gateway_id" AS "gatewayId",
-        "notification_is_for_admins_only" AS "isForAdminsOnly"
+        "notification_is_for_admins_only" AS "isForAdminsOnly",
+        "notification_created_at" AS "createdAt"
     `,
     [
       input.type,
@@ -114,6 +116,28 @@ export const assignNotificationToTargetUsers = async (
   );
 };
 
+export const assignNotificationToOneUser = async (
+  notificationId: number,
+  userId: number,
+): Promise<void> => {
+  await dbPool.query(
+    `
+      INSERT INTO "users_notifications" (
+        "notification_id",
+        "user_id",
+        "acknowledged"
+      )
+      VALUES (
+        $1,
+        $2,
+        false
+      )
+      ON CONFLICT ("notification_id", "user_id") DO NOTHING;
+    `,
+    [notificationId, userId],
+  );
+};
+
 export const acknowledgeNotification = async (
   input: AcknowledgeNotificationInput,
 ): Promise<Pick<Notification, 'id' | 'acknowledged'> | null> => {
@@ -131,4 +155,31 @@ export const acknowledgeNotification = async (
   );
 
   return getFirstRow(result);
+};
+
+
+export type NotificationDuplicateCheckInput = {
+  type: Notification['type'];
+  text: string;
+  gatewayId: number | null;
+};
+
+export const existsRecentDuplicateNotification = async (
+  input: NotificationDuplicateCheckInput,
+): Promise<boolean> => {
+  const result = await dbPool.query<{ exists: boolean }>(
+    `
+      SELECT EXISTS (
+        SELECT 1
+        FROM "notifications"
+        WHERE "notification_text" = $1
+          AND "notification_type" = $2
+          AND "notification_gateway_id" IS NOT DISTINCT FROM $3
+          AND "notification_created_at" >= NOW() - INTERVAL '24 hours'
+      ) AS "exists"
+    `,
+    [input.text, input.type, input.gatewayId],
+  );
+
+  return result.rows[0]?.exists ?? false;
 };
