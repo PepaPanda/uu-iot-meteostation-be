@@ -3,6 +3,7 @@ import z from 'zod/v3';
 import type { User } from '../users/users.types';
 import { loginUserSchema } from './auth.schema';
 import { registerFromInviteUserSchema } from '../users/users.schema';
+import { toIsoString } from '../../../shared/helpers/utils';
 
 //Response DTos
 
@@ -25,8 +26,8 @@ export type CurrentUserInfoResponseDto = {
   email: string;
   nickname: string;
   role: string;
-  createdAt: Date;
-  updatedAt: Date;
+  createdAt: string;
+  updatedAt: string;
 };
 
 export const  toCurrentUserInfoResponseDto = (user: User): CurrentUserInfoResponseDto => ({
@@ -34,8 +35,8 @@ export const  toCurrentUserInfoResponseDto = (user: User): CurrentUserInfoRespon
   email: user.userEmail,
   nickname: user.userNickname,
   role: user.userRole,
-  createdAt: user.userCreatedAt,
-  updatedAt: user.userUpdatedAt
+  createdAt: toIsoString(user.userCreatedAt),
+  updatedAt: toIsoString(user.userUpdatedAt)
 });
 
 

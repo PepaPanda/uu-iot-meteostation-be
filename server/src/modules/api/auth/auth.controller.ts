@@ -47,7 +47,7 @@ export const registerFromInvite = async (req: TypedRequest<RegisterUserRequestDt
     const user = await createUserService(password, token, nickname);
     if(!user) throw new InternalServerError('Could not create user');
 
-    await createNotificationForOneUser({userId: user.userId, type: 'info', text:'Welcome to meteotrack!', gatewayId: null});
+    await createNotificationForOneUser({userId: user.userId, type: 'info', text:'Vítejte v aplikaci MeteoTrack!', gatewayId: null});
 
     const sessionToken = await generateAndReturnNewSessionToken(user.userId);
     attachSessionCookie(res, sessionToken);

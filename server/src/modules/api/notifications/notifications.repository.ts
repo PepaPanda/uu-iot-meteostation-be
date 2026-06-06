@@ -34,8 +34,6 @@ export const listNotifications = async (
 ): Promise<Notification[]> => {
   const values: unknown[] = [input.userId];
 
-  console.log(values);
-
   const whereSql = [
     'un."user_id" = $1',
   ];

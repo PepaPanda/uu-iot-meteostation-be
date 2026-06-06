@@ -14,7 +14,8 @@ if (!existsSync('.env')) {
 run('docker', ['compose', 'up', '-d', 'postgres', 'adminer']);
 
 run('docker', ['compose', 'run', '--rm', '--build', 'db-migrate']);
-run('docker', ['compose', 'run', '--rm', '--build', 'db-seed']);
+// Create the test users before seeding so the seed can link notifications to them.
 run('docker', ['compose', 'run', '--rm', '--build', 'db-create-test-user']);
+run('docker', ['compose', 'run', '--rm', '--build', 'db-seed']);
 
 run('docker', ['compose', 'up', '--build', 'api']);

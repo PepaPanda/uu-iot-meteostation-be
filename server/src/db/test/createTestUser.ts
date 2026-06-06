@@ -1,8 +1,6 @@
 import { dbPool } from '../pool';
 import argon2 from 'argon2';
 
-import { createNotificationService } from '../../modules/api/notifications/notifications.service';
-
 (async () => {
     const HASH = await argon2.hash('password123');
     const dbQuery = `INSERT INTO "users" (
@@ -22,8 +20,9 @@ import { createNotificationService } from '../../modules/api/notifications/notif
         NOW(),
         NOW(),
         NOW()
-    );`;
-    
+    )
+    ON CONFLICT ("user_email") DO NOTHING;`;
+
     const users = [
         {
             email: 'admin@meteotrack.cz',
@@ -50,14 +49,15 @@ import { createNotificationService } from '../../modules/api/notifications/notif
             nickname: 'Some Guest'
         },
     ];
-    
-    const create = async () => {    
-        users.forEach(user => {
-            dbPool.query(dbQuery, [user.email, user.passwordHash, user.role, user.nickname]);
-        });
-    };
-    create();
 
-    createNotificationService({type:'info', text: 'welcome to meteo track!', gatewayId: null, isForAdminsOnly: false});
-
+    try {
+        await Promise.all(
+            users.map(user =>
+                dbPool.query(dbQuery, [user.email, user.passwordHash, user.role, user.nickname])
+            )
+        );
+        console.log(`Ensured ${users.length} test users exist.`);
+    } finally {
+        await dbPool.end();
+    }
 })();

@@ -2,6 +2,7 @@ import z from 'zod/v3';
 
 import { getTelemetryHistorySchema, getTrendsSchema } from './telemetry.schema';
 import type { Telemetry } from './telemetry.types';
+import { toIsoString } from '../../../shared/helpers/utils';
 
 //Body
 export type GetTelemetryHistoryRequestDto = z.infer<typeof getTelemetryHistorySchema>;
@@ -60,8 +61,8 @@ export const toGetLatestTelemetryResponseDto = (
         id: telemetry.id,
         remoteId: telemetry.remoteId,
         gatewayId: telemetry.gatewayId,
-        measuredAtUtc: String(telemetry.measuredAtUtc),
-        receivedAtUtc: String(telemetry.receivedAtUtc),
+        measuredAtUtc: toIsoString(telemetry.measuredAtUtc),
+        receivedAtUtc: toIsoString(telemetry.receivedAtUtc),
         temperature: telemetry.temperature,
         pressure: telemetry.pressure,
         humidity: telemetry.humidity,

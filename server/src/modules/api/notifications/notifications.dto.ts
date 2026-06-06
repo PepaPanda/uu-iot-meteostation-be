@@ -3,6 +3,7 @@ import z from 'zod/v3';
 import { listNotificationsSchema, createNotificationSchema, notificationIdParamsSchema } from './notifications.schema';
 
 import type { Notification } from './notifications.type';
+import { toIsoString } from '../../../shared/helpers/utils';
 
 // Body
 export type ListNotificationsRequestDto = z.infer<typeof listNotificationsSchema>;
@@ -38,7 +39,7 @@ export const toListNotificationsResponseDto = (notifications: Notification[]): L
         type: n.type,
         gatewayId: n.gatewayId,
         isForAdminsOnly: n.isForAdminsOnly,
-        createdAt: n.createdAt,
+        createdAt: toIsoString(n.createdAt),
         acknowledged: n.acknowledged
     }))};
 };

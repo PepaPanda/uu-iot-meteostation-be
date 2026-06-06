@@ -44,7 +44,7 @@ export const handleNotificationsOnTelemetryReceived = async (input: {
 
         await createNotification({
             type: 'info',
-            text: `Gateway "${gatewayName}" (ID: ${gatewayId}) just got online`,
+            text: `Gateway „${gatewayName}" (ID: ${gatewayId}) je opět online.`,
             isForAdminsOnly: false,
             gatewayId,
         });
@@ -59,7 +59,7 @@ export const handleNotificationsOnTelemetryReceived = async (input: {
     ) {
         await createNotification({
             type: 'warning',
-            text: `Gateway "${gatewayName}" (ID: ${gatewayId}) battery is getting low (20%).`,
+            text: `Gateway „${gatewayName}" (ID: ${gatewayId}) má slabou baterii (20 %).`,
             isForAdminsOnly: false,
             gatewayId,
         });
@@ -72,7 +72,7 @@ export const handleNotificationsOnTelemetryReceived = async (input: {
     ) {
         await createNotificationIfNotDuplicate({
             type: 'warning',
-            text: `Gateway "${gatewayName}" (ID: ${gatewayId}) wifi signal is low, you may experience telemetry outages.`,
+            text: `Gateway „${gatewayName}" (ID: ${gatewayId}) má slabý signál Wi-Fi, může docházet k výpadkům telemetrie.`,
             isForAdminsOnly: false,
             gatewayId,
         });
@@ -81,7 +81,7 @@ export const handleNotificationsOnTelemetryReceived = async (input: {
     if (prevRain === 0 && currentRain > 0) {
          await createNotification({
             type: 'info',
-            text: `Gateway "${gatewayName}" just registered raindrops.`,
+            text: `Gateway „${gatewayName}" právě zaznamenal dešťové srážky.`,
             isForAdminsOnly: false,
             gatewayId,
         });
@@ -91,7 +91,7 @@ export const handleNotificationsOnTelemetryReceived = async (input: {
 export const handlePredictionNotification = async (gateway: Gateway, prediction: SimplePredictionResponseDto) => {
     return await createNotification({
         type: 'info',
-        text: `Prediction from "${gateway.gatewayName}": ${prediction.summary}`,
+        text: `Předpověď ze stanice „${gateway.gatewayName}": ${prediction.summary}`,
         isForAdminsOnly: false,
         gatewayId: gateway.gatewayId,
     });
@@ -108,34 +108,34 @@ export const createPredictionSummary = (
 ): {text: string, important: boolean} => {
     if (pressureTrend === 'falling' && humidityTrend === 'rising') {
         return {
-            text: 'Pressure is falling and humidity is rising, rain may become more likely in the next few hours.',
+            text: 'Tlak klesá a vlhkost stoupá – v následujících hodinách je pravděpodobnější déšť.',
             important: true
         };
     }
 
     if (pressureTrend === 'rising' && humidityTrend === 'falling') {
         return {
-            text: 'Pressure is rising and humidity is falling, weather may become more stable in the next few hours.',
+            text: 'Tlak stoupá a vlhkost klesá – počasí se v následujících hodinách může ustálit.',
             important: false
         };
     }
 
     if (temperatureTrend === 'rising' && pressureTrend !== 'falling') {
         return {
-            text: 'Temperature is rising and pressure is not falling, conditions may remain stable in the next few hours.',
+            text: 'Teplota stoupá a tlak neklesá – podmínky mohou v následujících hodinách zůstat stabilní.',
             important: false
         };
     }
 
     if (temperatureTrend === 'falling' && humidityTrend === 'rising') {
         return { 
-            text: 'Temperature is falling and humidity is rising, conditions may become colder and more humid in the next few hours.',
+            text: 'Teplota klesá a vlhkost stoupá – v následujících hodinách může být chladněji a vlhčeji.',
             important: true     
         };
     }
 
     return {
-        text: 'No significant weather change is detected for the next few hours.',
+        text: 'V následujících hodinách se neočekává výrazná změna počasí.',
         important: false
     };
 };

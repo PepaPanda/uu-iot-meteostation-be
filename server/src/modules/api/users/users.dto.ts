@@ -3,6 +3,7 @@ import z from 'zod/v3';
 import { inviteUserSchema, listUsersSchema, updateUserRoleSchema, updateUserSchema, changeUserPasswordSchema, userIdParamsSchema } from './users.schema';
 
 import type { User } from './users.types';
+import { toIsoString } from '../../../shared/helpers/utils';
 
 
 //Requst Body DTOs
@@ -59,9 +60,9 @@ export const toGetUserResponseDto = (user: User): GetUserResponseDto => {
         email: user.userEmail,
         role: user.userRole,
         nickname: user.userNickname,
-        createdAt: String(user.userCreatedAt),
-        registeredAt: String(user.userRegisteredAt),
-        updatedAt: String(user.userUpdatedAt),
+        createdAt: toIsoString(user.userCreatedAt),
+        registeredAt: toIsoString(user.userRegisteredAt),
+        updatedAt: toIsoString(user.userUpdatedAt),
     };
 };
 
@@ -76,7 +77,7 @@ export const toUpdateUserRoleResponseDto = (updatedUser: Pick<User, 'userId' | '
     return {
         id: updatedUser.userId,
         role: updatedUser.userRole,
-        updatedAt: String(updatedUser.userUpdatedAt),
+        updatedAt: toIsoString(updatedUser.userUpdatedAt),
     };
 };
 

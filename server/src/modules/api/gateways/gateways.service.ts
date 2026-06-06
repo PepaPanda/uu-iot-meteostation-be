@@ -11,6 +11,7 @@ import {
 import type { Gateway } from './gateways.types';
 import { hashGatewayToken, generateNewGatewayToken, resolveGatewayHealthStatus, handleGatewayHealthNotifications } from './gateways.helpers';
 import { UpdateGatewayRequestDto, GetGatewayHealthResponseDto, type CreateGatewayRequestDto } from './gateways.dto';
+import { toIsoString } from '../../../shared/helpers/utils';
 
 export const getGatewayByPlainToken = async (
   gatewayToken: string,
@@ -138,7 +139,7 @@ export const getGatewayHealthService = async (
         gatewayId,
         status: gwStatus,
         lastTelemetryAtUtc: healthTelemetry
-            ? String(healthTelemetry.lastTelemetryAtUtc)
+            ? toIsoString(healthTelemetry.lastTelemetryAtUtc)
             : null,
         nodeBatteryLevel: gwBattery,
         nodeWifiStrength: gwWifi,

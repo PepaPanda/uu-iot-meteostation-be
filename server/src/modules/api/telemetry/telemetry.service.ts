@@ -74,7 +74,7 @@ export const getPredictionService = async (
             temperatureTrend: 'stable',
             pressureTrend: 'stable',
             humidityTrend: 'stable',
-            summary: 'Not enough telemetry data is available to calculate a reliable prediction.',
+            summary: 'K výpočtu spolehlivé předpovědi není k dispozici dostatek telemetrických dat.',
             important: false
         };
     }

@@ -45,7 +45,7 @@ export const handleGatewayHealthNotifications = async (input: {
 
         await createNotification({
             type: 'danger',
-            text: `Gateway "${gatewayName}" (ID: ${gatewayId}) went offline`,
+            text: `Gateway „${gatewayName}" (ID: ${gatewayId}) přešel do stavu offline.`,
             isForAdminsOnly: false,
             gatewayId,
         });
