@@ -18,7 +18,8 @@
       "dev:init": "sh dev-init.sh",
       "dev:up": "docker compose up --build api adminer",
       "dev:down": "docker compose down",
-      "dev:reset": "docker compose down -v && sh scripts/dev-init.sh"
+      "dev:reset": "docker compose down -v && sh scripts/dev-init.sh",
+      "dev:db:create-test-user": "tsx ./src/db/test/createTestUser.ts"
   },
   "dependencies": {
     "argon2": "^0.44.0",
