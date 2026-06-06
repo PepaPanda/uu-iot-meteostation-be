@@ -10,6 +10,11 @@ services:
       - "5432:5432"
     volumes:
       - meteostation-postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U meteostation_user -d meteostation"]
+      interval: 2s
+      timeout: 5s
+      retries: 20
 
   adminer:
     image: adminer
@@ -17,6 +22,73 @@ services:
     restart: unless-stopped
     ports:
       - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    container_name: meteostation-api
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: postgres://meteostation_user:meteostation_password@postgres:5432/meteostation
+    ports:
+      - "3000:3000"
+    volumes:
+      - .:/app
+      - /app/node_modules
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command: npm run dev
+
+  db-migrate:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: postgres://meteostation_user:meteostation_password@postgres:5432/meteostation
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command: npm run db:migrate
+    profiles:
+      - setup
+
+  db-seed:
+    image: timescale/timescaledb:latest-pg16
+    working_dir: /app
+    volumes:
+      - .:/app
+    environment:
+      PGPASSWORD: meteostation_password
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command: >
+      sh -c "psql -h postgres -U meteostation_user -d meteostation < database/seeds/test.seed.sql"
+    profiles:
+      - setup
+
+  db-create-test-user:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: postgres://meteostation_user:meteostation_password@postgres:5432/meteostation
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command: npm run dev:db:create-test-user
+    profiles:
+      - setup
 
 volumes:
   meteostation-postgres-data:
