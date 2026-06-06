@@ -19,7 +19,8 @@
       "dev:up": "docker compose up --build api adminer",
       "dev:down": "docker compose down",
       "dev:reset": "docker compose down -v && sh scripts/dev-init.sh",
-      "dev:db:create-test-user": "tsx ./src/db/test/createTestUser.ts"
+      "dev:db:create-test-user": "tsx ./src/db/test/createTestUser.ts",
+      "dev:nuke": "docker compose down --remove-orphans -v --rmi local && docker compose rm -fsv && docker network prune -f"
   },
   "dependencies": {
     "argon2": "^0.44.0",

@@ -34,7 +34,8 @@ services:
     env_file:
       - .env
     environment:
-      DATABASE_URL: postgres://meteostation_user:meteostation_password@postgres:5432/meteostation
+      DB_URL: postgresql://meteostation_user:meteostation_password@postgres:5432/meteostation
+      DATABASE_URL: postgresql://meteostation_user:meteostation_password@postgres:5432/meteostation
     ports:
       - "3000:3000"
     volumes:
@@ -82,13 +83,12 @@ services:
     env_file:
       - .env
     environment:
-      DATABASE_URL: postgres://meteostation_user:meteostation_password@postgres:5432/meteostation
+      DB_URL: postgresql://meteostation_user:meteostation_password@postgres:5432/meteostation
+      DATABASE_URL: postgresql://meteostation_user:meteostation_password@postgres:5432/meteostation
     depends_on:
       postgres:
         condition: service_healthy
     command: npm run dev:db:create-test-user
-    profiles:
-      - setup
 
 volumes:
   meteostation-postgres-data:
