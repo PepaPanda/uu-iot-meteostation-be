@@ -15,10 +15,10 @@
       "db:migrate": "node-pg-migrate up --migrations-dir database/migrations",
       "db:rollback": "node-pg-migrate down --migrations-dir database/migrations",
 
-      "dev:init": "sh dev-init.sh",
+      "dev:init": "node dev-init.mjs",
       "dev:up": "docker compose up --build api adminer",
       "dev:down": "docker compose down",
-      "dev:reset": "docker compose down -v && sh scripts/dev-init.sh",
+      "dev:reset": "docker compose down --remove-orphans -v && npm run dev:init",
       "dev:db:create-test-user": "tsx ./src/db/test/createTestUser.ts",
       "dev:nuke": "docker compose down --remove-orphans -v && docker compose rm -fsv && sh -c 'containers=$(docker ps -aq --filter label=com.docker.compose.project=server); if [ -n \"$containers\" ]; then docker rm -f $containers; fi; images=$(docker images --format \"{{.Repository}}:{{.Tag}}\" | grep \"^server-\" || true); if [ -n \"$images\" ]; then docker rmi -f $images; fi' && docker network prune -f"  
   },
