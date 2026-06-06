@@ -20,7 +20,7 @@
       "dev:down": "docker compose down",
       "dev:reset": "docker compose down -v && sh scripts/dev-init.sh",
       "dev:db:create-test-user": "tsx ./src/db/test/createTestUser.ts",
-      "dev:nuke": "docker compose down --remove-orphans -v --rmi local && docker compose rm -fsv && docker network prune -f"
+      "dev:nuke": "docker compose down --remove-orphans -v && docker compose rm -fsv && sh -c 'containers=$(docker ps -aq --filter label=com.docker.compose.project=server); if [ -n \"$containers\" ]; then docker rm -f $containers; fi; images=$(docker images --format \"{{.Repository}}:{{.Tag}}\" | grep \"^server-\" || true); if [ -n \"$images\" ]; then docker rmi -f $images; fi' && docker network prune -f"  
   },
   "dependencies": {
     "argon2": "^0.44.0",
