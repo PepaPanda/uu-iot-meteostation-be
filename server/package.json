@@ -7,20 +7,18 @@
   "type": "commonjs",
   "main": "index.js",
   "scripts": {
-    "dev": "ts-node-dev --respawn --transpile-only src/index.ts",
-    "build": "tsc",
-    "start": "node dist/index.js",
-    "dev:db:up": "docker compose up -d",
-    "dev:db:down": "docker compose down",
-    "dev:db:seed": "docker exec -i meteostation-postgres psql -U meteostation_user -d meteostation < database/seeds/test.seed.sql",
-    "dev:db:drop": "docker exec -i meteostation-postgres psql -U meteostation_user -d meteostation < database/drop.sql",
-    "dev:db:create-test-user": "tsx ./src/db/test/createTestUser.ts",
-    "dev:db:wait": "docker exec meteostation-postgres pg_isready -U meteostation_user -d meteostation",
-    "dev:db:reset": "npm run dev:db:up && npm run dev:db:wait && npm run dev:db:drop && npm run dev:db:migrate && npm run dev:db:seed && npm run dev:db:create-test-user",
-    "dev:db:migrate": "DATABASE_URL=postgres://meteostation_user:meteostation_password@localhost:5432/meteostation npm run db:migrate",
-    "db:migration:create": "node-pg-migrate create --migrations-dir database/migrations --migration-file-language sql",
-    "db:migrate": "node-pg-migrate up --migrations-dir database/migrations",
-    "db:rollback": "node-pg-migrate down --migrations-dir database/migrations"
+      "dev": "ts-node-dev --respawn --transpile-only src/index.ts",
+      "build": "tsc",
+      "start": "node dist/index.js",
+
+      "db:migration:create": "node-pg-migrate create --migrations-dir database/migrations --migration-file-language sql",
+      "db:migrate": "node-pg-migrate up --migrations-dir database/migrations",
+      "db:rollback": "node-pg-migrate down --migrations-dir database/migrations",
+
+      "dev:init": "sh scripts/dev-init.sh",
+      "dev:up": "docker compose up --build api adminer",
+      "dev:down": "docker compose down",
+      "dev:reset": "docker compose down -v && sh scripts/dev-init.sh"
   },
   "dependencies": {
     "argon2": "^0.44.0",
